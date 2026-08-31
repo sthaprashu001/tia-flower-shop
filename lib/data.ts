@@ -14,11 +14,21 @@ import { Bouquet, ShopStatus } from "./types";
 export const bouquets: Bouquet[] = [
   {
     id: "red-rose-classic",
+    name: "Red Rose Bouquet black cover",
+    price: 1200,
+    description:
+      "A dozen fresh red roses, hand-tied with kraft wrapping and a satin ribbon. Our most popular welcome-home pick.",
+    image: "D:\business project\images real\red-rose-black-cover.jpeg",
+    available: true,
+    customizable: true,
+  },
+  {
+    id: "red-rose-classic",
     name: "Red Rose Bouquet",
     price: 1200,
     description:
       "A dozen fresh red roses, hand-tied with kraft wrapping and a satin ribbon. Our most popular welcome-home pick.",
-    image: "/images/real.jpg",
+    image: "/images/red-rose.svg",
     available: true,
     customizable: true,
   },

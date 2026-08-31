@@ -21,7 +21,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-5xl px-4 py-14 sm:py-20">
           <div className="mb-4 flex items-center gap-3">
             <span className="font-mono text-xs uppercase tracking-widest text-ivory/50">
-              TIA · Kathmandu, Nepal
+              TIa · Kathmandu, Nepal
             </span>
             <ShopStatusBadge />
           </div>
