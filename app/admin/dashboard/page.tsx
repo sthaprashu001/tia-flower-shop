@@ -46,22 +46,31 @@ export default function AdminDashboardPage() {
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl italic text-charcoal">Admin dashboard</h1>
-        <button
-          onClick={() => {
-            sessionStorage.removeItem("adminKey");
-            router.push("/admin/login");
-          }}
-          className="text-sm text-charcoal/60 hover:text-rose-dark"
-        >
-          Log out
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push("/admin/products")}
+            className="text-sm font-semibold text-rose-dark hover:underline"
+          >
+            Manage bouquets →
+          </button>
+          <button
+            onClick={() => {
+              sessionStorage.removeItem("adminKey");
+              router.push("/admin/login");
+            }}
+            className="text-sm text-charcoal/60 hover:text-rose-dark"
+          >
+            Log out
+          </button>
+        </div>
       </div>
 
       {/* Note about what's wired up vs. placeholder */}
       <div className="mt-4 rounded-card border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <strong>Scaffold note:</strong> Order status changes below are
-        display-only for now (no PATCH endpoint yet). Product management and
-        the OPEN/BUSY/CLOSED toggle are not wired up yet either — see{" "}
+        display-only for now (no PATCH endpoint yet). Product management now
+        lives under <strong>Manage bouquets</strong> above, but needs{" "}
+        <code>MONGODB_URI</code> connected to actually save changes — see{" "}
         <code>docs/NEXT_STEPS.md</code> for what to build next.
       </div>
 
