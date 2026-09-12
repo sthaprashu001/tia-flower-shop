@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBouquetById } from "@/lib/data";
+import { getBouquetById } from "@/lib/products";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import { Order as OrderType, OrderInput } from "@/lib/types";
@@ -22,15 +22,16 @@ function generateOrderNumber() {
   return `TIA${n}`;
 }
 
-function computeTotal(items: OrderInput["items"]) {
-  return items.reduce((sum, item) => {
-    const bouquet = getBouquetById(item.bouquetId);
-    if (!bouquet) return sum;
-    return sum + bouquet.price * item.quantity;
-  }, 0);
+async function computeTotal(items: OrderInput["items"]) {
+  let total = 0;
+  for (const item of items) {
+    const bouquet = await getBouquetById(item.bouquetId);
+    if (bouquet) total += bouquet.price * item.quantity;
+  }
+  return total;
 }
 
-function validate(body: Partial<OrderInput>): string | null {
+async function validate(body: Partial<OrderInput>): Promise<string | null> {
   if (!body.customerName?.trim()) return "Name is required.";
   if (!body.phone?.trim()) return "Phone/WhatsApp number is required.";
   if (!body.items || body.items.length === 0) return "Select at least one bouquet.";
@@ -38,7 +39,7 @@ function validate(body: Partial<OrderInput>): string | null {
   if (!body.time) return "Time is required.";
   if (!body.meetingLocation?.trim()) return "Meeting location near TIA is required.";
   for (const item of body.items) {
-    const b = getBouquetById(item.bouquetId);
+    const b = await getBouquetById(item.bouquetId);
     if (!b) return `Unknown bouquet: ${item.bouquetId}`;
     if (!b.available) return `"${b.name}" is not available today.`;
     if (item.quantity < 1) return "Quantity must be at least 1.";
@@ -49,12 +50,12 @@ function validate(body: Partial<OrderInput>): string | null {
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as Partial<OrderInput>;
 
-  const error = validate(body);
+  const error = await validate(body);
   if (error) {
     return NextResponse.json({ error }, { status: 400 });
   }
 
-  const total = computeTotal(body.items!);
+  const total = await computeTotal(body.items!);
   const orderNumber = generateOrderNumber();
 
   const orderDoc: OrderType = {

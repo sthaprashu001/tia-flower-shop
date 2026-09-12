@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Order, OrderStatus } from "@/lib/types";
-import { getBouquetById } from "@/lib/data";
+import { Order, OrderStatus, Bouquet } from "@/lib/types";
 
 const STATUS_OPTIONS: OrderStatus[] = [
   "PENDING",
@@ -18,6 +17,7 @@ const STATUS_OPTIONS: OrderStatus[] = [
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [bouquetNames, setBouquetNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +27,19 @@ export default function AdminDashboardPage() {
       router.push("/admin/login");
       return;
     }
+
+    fetch("/api/products")
+      .then((res) => res.json())
+      .then((data) => {
+        const names: Record<string, string> = {};
+        (data.products || []).forEach((b: Bouquet) => {
+          names[b.id] = b.name;
+        });
+        setBouquetNames(names);
+      })
+      .catch(() => {
+        // Non-critical — order items will just show their raw id if this fails.
+      });
 
     fetch(`/api/orders?key=${encodeURIComponent(key)}`)
       .then((res) => {
@@ -128,7 +141,7 @@ export default function AdminDashboardPage() {
               <ul className="mt-2 text-sm text-charcoal/70">
                 {order.items.map((item) => (
                   <li key={item.bouquetId}>
-                    {getBouquetById(item.bouquetId)?.name || item.bouquetId} × {item.quantity}
+                    {bouquetNames[item.bouquetId] || item.bouquetId} × {item.quantity}
                   </li>
                 ))}
               </ul>

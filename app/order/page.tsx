@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { bouquets } from "@/lib/data";
-import { OrderItem } from "@/lib/types";
+import { Bouquet, OrderItem } from "@/lib/types";
 
 function OrderForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselected = searchParams.get("bouquet");
 
+  const [bouquets, setBouquets] = useState<Bouquet[]>([]);
+  const [loadingBouquets, setLoadingBouquets] = useState(true);
   const [items, setItems] = useState<OrderItem[]>(
     preselected ? [{ bouquetId: preselected, quantity: 1 }] : []
   );
@@ -22,6 +23,14 @@ function OrderForm() {
   const [personalMessage, setPersonalMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((res) => res.json())
+      .then((data) => setBouquets(data.products || []))
+      .catch(() => setError("Could not load bouquets. Please refresh the page."))
+      .finally(() => setLoadingBouquets(false));
+  }, []);
 
   const available = bouquets.filter((b) => b.available);
 
@@ -97,6 +106,7 @@ function OrderForm() {
         {/* Bouquet selection */}
         <fieldset>
           <legend className="font-display text-lg text-charcoal">Choose bouquets</legend>
+          {loadingBouquets && <p className="mt-2 text-sm text-charcoal/60">Loading bouquets…</p>}
           <div className="mt-3 space-y-2">
             {available.map((b) => {
               const selected = items.find((i) => i.bouquetId === b.id);

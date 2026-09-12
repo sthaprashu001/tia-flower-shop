@@ -1,12 +1,15 @@
 import { Metadata } from "next";
 import BouquetCard from "@/components/BouquetCard";
-import { bouquets } from "@/lib/data";
+import { getAllBouquets } from "@/lib/products";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Bouquets | TIA Flower Shop",
 };
 
-export default function BouquetsPage() {
+export default async function BouquetsPage() {
+  const bouquets = await getAllBouquets();
   const available = bouquets.filter((b) => b.available);
   const soldOut = bouquets.filter((b) => !b.available);
 

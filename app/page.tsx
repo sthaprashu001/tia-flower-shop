@@ -2,7 +2,9 @@ import Link from "next/link";
 import BouquetCard from "@/components/BouquetCard";
 import ShopStatusBadge from "@/components/ShopStatusBadge";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { bouquets } from "@/lib/data";
+import { getAllBouquets } from "@/lib/products";
+
+export const dynamic = "force-dynamic";
 
 const STEPS = [
   { time: "01", title: "Browse", body: "See today's available bouquets and prices." },
@@ -11,7 +13,8 @@ const STEPS = [
   { time: "04", title: "Meet & receive", body: "We hand it to you near TIA. Free, no detour needed." },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const bouquets = await getAllBouquets();
   const available = bouquets.filter((b) => b.available).slice(0, 4);
 
   return (

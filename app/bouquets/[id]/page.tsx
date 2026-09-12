@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getBouquetById, bouquets } from "@/lib/data";
+import { getBouquetById } from "@/lib/products";
 
-export function generateStaticParams() {
-  return bouquets.map((b) => ({ id: b.id }));
-}
+// Bouquets can be added/edited any time from the admin panel, so this page
+// is rendered fresh on every request instead of pre-generated at build time.
+export const dynamic = "force-dynamic";
 
-export default function BouquetDetailPage({ params }: { params: { id: string } }) {
-  const bouquet = getBouquetById(params.id);
+export default async function BouquetDetailPage({ params }: { params: { id: string } }) {
+  const bouquet = await getBouquetById(params.id);
   if (!bouquet) return notFound();
 
   return (
