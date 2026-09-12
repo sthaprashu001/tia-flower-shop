@@ -9,9 +9,11 @@ import { put } from "@vercel/blob";
  * That URL is what gets saved into a product's `image` field — MongoDB
  * stores the link, Vercel Blob stores the actual file.
  *
- * Requires BLOB_READ_WRITE_TOKEN to be set (Vercel Dashboard -> your
- * project -> Storage -> create a Blob store -> the token is added for
- * you automatically). See docs/NEXT_STEPS.md Phase 2 for setup steps.
+ * As of mid-2026, new Blob stores connected to a project use OIDC
+ * authentication by default (BLOB_STORE_ID + an auto-rotating token the
+ * SDK reads automatically) rather than the older static
+ * BLOB_READ_WRITE_TOKEN. Either is fine — @vercel/blob's `put()` picks
+ * up whichever is present with no extra code needed.
  */
 function isAuthorized(req: NextRequest): boolean {
   const key = req.nextUrl.searchParams.get("key") || req.headers.get("x-admin-key");
@@ -27,7 +29,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  const hasOidcBlob = Boolean(process.env.BLOB_STORE_ID);
+  const hasStaticToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  if (!hasOidcBlob && !hasStaticToken) {
     return NextResponse.json(
       { error: "Image storage is not set up yet. Add a Blob store in your Vercel project (Storage tab)." },
       { status: 400 }
