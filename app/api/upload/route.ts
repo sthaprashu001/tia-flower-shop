@@ -54,6 +54,10 @@ export async function POST(req: NextRequest) {
   try {
     const blob = await put(`products/${Date.now()}-${file.name}`, file, {
       access: "public",
+      // Explicit token always takes priority over OIDC auto-detection
+      // (see @vercel/blob docs on credential resolution order). Passing
+      // it directly avoids ambiguity about which store OIDC resolves to.
+      ...(process.env.BLOB_READ_WRITE_TOKEN ? { token: process.env.BLOB_READ_WRITE_TOKEN } : {}),
     });
     return NextResponse.json({ url: blob.url }, { status: 201 });
   } catch (err) {
