@@ -30,12 +30,10 @@ export default async function HomePage() {
           </div>
 
           <h1 className="max-w-2xl font-display text-4xl italic leading-tight sm:text-5xl">
-            Flowers, ready before you land.
+            For every hello, goodbye, and journey.
           </h1>
           <p className="mt-4 max-w-lg text-ivory/75">
-            Welcome someone home or send them off in style. Order online, we
-            prepare it fresh near the airport, and meet you at your gate area
-            — no searching for a flower shop after you land.
+            Sending someone abroad or welcoming them home? We’ll prepare fresh flowers for your special moment and have them ready near TIA when you need them.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
