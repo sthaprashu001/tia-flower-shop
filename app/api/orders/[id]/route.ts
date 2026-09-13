@@ -55,3 +55,29 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   order.status = status;
   return NextResponse.json({ order });
 }
+
+// DELETE /api/orders/[id] — permanently remove an order from the
+// dashboard (e.g. once it's delivered, or a mistaken/spam order).
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (isDatabaseConfigured()) {
+    try {
+      await connectToDatabase();
+      const order = await Order.findByIdAndDelete(params.id);
+      if (!order) return NextResponse.json({ error: "Order not found." }, { status: 404 });
+      return NextResponse.json({ ok: true });
+    } catch (err) {
+      console.error("Failed to delete order:", err);
+      return NextResponse.json({ error: "Could not delete order." }, { status: 500 });
+    }
+  }
+
+  const index = mockOrders.findIndex((o) => o.id === params.id);
+  if (index === -1) return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  mockOrders.splice(index, 1);
+  return NextResponse.json({ ok: true });
+}

@@ -111,6 +111,18 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function handleDeleteOrder(orderId: string) {
+    if (!confirm("Remove this order permanently? This can't be undone.")) return;
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    } catch {
+      alert("Could not remove order — try again.");
+    }
+  }
+
   async function handleSetShopStatus(newStatus: ShopStatus) {
     setSettingsSaving(true);
     setSettingsError(null);
@@ -341,6 +353,13 @@ export default function AdminDashboardPage() {
               <p className="mt-2 font-mono text-sm font-bold text-rose-dark">
                 Rs. {order.total.toLocaleString("en-IN")}
               </p>
+
+              <button
+                onClick={() => handleDeleteOrder(order.id)}
+                className="mt-2 text-xs text-charcoal/40 hover:text-rose-dark hover:underline"
+              >
+                Remove order
+              </button>
             </div>
           ))}
         </div>

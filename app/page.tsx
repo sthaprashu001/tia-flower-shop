@@ -47,26 +47,6 @@ export default async function HomePage() {
             </Link>
             <WhatsAppButton label="Ask on WhatsApp" />
           </div>
-
-          {/* Departure-board style strip */}
-          <div className="mt-10 overflow-hidden rounded-card border border-white/10 bg-board-light">
-            <div className="board-row text-ivory/60">
-              <span>DESTINATION</span>
-              <span>STATUS</span>
-            </div>
-            <div className="board-row">
-              <span>Welcome bouquets — arrivals</span>
-              <span className="board-tag bg-sage text-ivory">READY</span>
-            </div>
-            <div className="board-row">
-              <span>Farewell bouquets — departures</span>
-              <span className="board-tag bg-sage text-ivory">READY</span>
-            </div>
-            <div className="board-row">
-              <span>Custom order</span>
-              <span className="board-tag bg-rose text-ivory">ASK US</span>
-            </div>
-          </div>
         </div>
       </section>
 
