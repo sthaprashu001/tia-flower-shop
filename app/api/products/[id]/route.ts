@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import Product from "@/models/Product";
 
-// Same lightweight admin check used elsewhere in the admin API.
-// Replace with real auth (Phase 3, docs/NEXT_STEPS.md) before adding staff logins.
-function isAuthorized(req: NextRequest): boolean {
-  const key = req.nextUrl.searchParams.get("key") || req.headers.get("x-admin-key");
-  const expected = process.env.ADMIN_API_KEY;
-  return Boolean(expected) && key === expected;
-}
-
-// PATCH /api/products/[id]?key=ADMIN_API_KEY — edit an existing bouquet.
+// PATCH /api/products/[id] — edit an existing bouquet.
 // Send only the fields you want to change.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!isAuthorized(req)) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!isDatabaseConfigured()) {
@@ -37,9 +32,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-// DELETE /api/products/[id]?key=ADMIN_API_KEY — remove a bouquet.
+// DELETE /api/products/[id] — remove a bouquet.
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!isAuthorized(req)) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!isDatabaseConfigured()) {

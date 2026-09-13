@@ -1,31 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import { put } from "@vercel/blob";
+import { authOptions } from "@/lib/auth";
 
 /**
- * POST /api/upload?key=ADMIN_API_KEY
+ * POST /api/upload
  * Body: multipart/form-data with a "file" field.
  *
  * Uploads an image to Vercel Blob storage and returns its public URL.
  * That URL is what gets saved into a product's `image` field — MongoDB
  * stores the link, Vercel Blob stores the actual file.
- *
- * As of mid-2026, new Blob stores connected to a project use OIDC
- * authentication by default (BLOB_STORE_ID + an auto-rotating token the
- * SDK reads automatically) rather than the older static
- * BLOB_READ_WRITE_TOKEN. Either is fine — @vercel/blob's `put()` picks
- * up whichever is present with no extra code needed.
  */
-function isAuthorized(req: NextRequest): boolean {
-  const key = req.nextUrl.searchParams.get("key") || req.headers.get("x-admin-key");
-  const expected = process.env.ADMIN_API_KEY;
-  return Boolean(expected) && key === expected;
-}
-
 const MAX_SIZE_BYTES = 4 * 1024 * 1024; // 4MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

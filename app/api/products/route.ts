@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { bouquets } from "@/lib/data";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import Product from "@/models/Product";
-
-// Same lightweight admin check used by /api/orders (see Phase 3 note there
-// about replacing this with real auth before handing out staff logins).
-function isAuthorized(req: NextRequest): boolean {
-  const key = req.nextUrl.searchParams.get("key") || req.headers.get("x-admin-key");
-  const expected = process.env.ADMIN_API_KEY;
-  return Boolean(expected) && key === expected;
-}
 
 // GET /api/products — list bouquets.
 // Falls back to the mock data in lib/data.ts until MONGODB_URI is set.
@@ -36,12 +30,13 @@ export async function GET() {
   }
 }
 
-// POST /api/products?key=ADMIN_API_KEY — create a new bouquet.
+// POST /api/products — create a new bouquet. Requires a logged-in admin session.
 // Requires MONGODB_URI to be set; the mock catalog in lib/data.ts is
 // read-only code, so there is nothing to write to until the database
 // is connected.
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

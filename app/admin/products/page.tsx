@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 /**
  * Admin product management.
@@ -11,8 +12,10 @@ import { useRouter } from "next/navigation";
  * save anything; until then /api/products serves the read-only mock data
  * in lib/data.ts and this page will tell you so.
  *
- * Auth here reuses the same placeholder ADMIN_API_KEY check as the rest
- * of /admin — see docs/NEXT_STEPS.md Phase 3 before sharing this link.
+ * Auth is a real session (Phase 3, next-auth) — middleware.ts blocks
+ * this route for anyone not logged in, and every write API call below
+ * relies on the session cookie sent automatically with same-origin
+ * requests, no key needed.
  */
 
 interface AdminProduct {
@@ -38,7 +41,7 @@ const emptyForm = {
 
 export default function AdminProductsPage() {
   const router = useRouter();
-  const [adminKey, setAdminKey] = useState<string | null>(null);
+  const { status: authStatus } = useSession();
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [source, setSource] = useState<"mock" | "database" | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,14 +54,14 @@ export default function AdminProductsPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    const key = sessionStorage.getItem("adminKey");
-    if (!key) {
+    // Middleware already blocks unauthenticated requests to this route,
+    // this is just for a clean loading/redirect state client-side.
+    if (authStatus === "unauthenticated") {
       router.push("/admin/login");
       return;
     }
-    setAdminKey(key);
-    loadProducts();
-  }, [router]);
+    if (authStatus === "authenticated") loadProducts();
+  }, [authStatus, router]);
 
   async function loadProducts() {
     setLoading(true);
@@ -96,14 +99,14 @@ export default function AdminProductsPage() {
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file || !adminKey) return;
+    if (!file) return;
 
     setUploading(true);
     setFormError(null);
     try {
       const body = new FormData();
       body.append("file", file);
-      const res = await fetch(`/api/upload?key=${encodeURIComponent(adminKey)}`, {
+      const res = await fetch("/api/upload", {
         method: "POST",
         body,
       });
@@ -119,7 +122,6 @@ export default function AdminProductsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!adminKey) return;
     setFormError(null);
 
     if (!form.name.trim()) return setFormError("Name is required.");
@@ -138,9 +140,7 @@ export default function AdminProductsPage() {
     };
 
     try {
-      const url = editingId
-        ? `/api/products/${editingId}?key=${encodeURIComponent(adminKey)}`
-        : `/api/products?key=${encodeURIComponent(adminKey)}`;
+      const url = editingId ? `/api/products/${editingId}` : "/api/products";
       const res = await fetch(url, {
         method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -159,10 +159,9 @@ export default function AdminProductsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!adminKey) return;
     if (!confirm("Delete this bouquet? This can't be undone.")) return;
 
-    const res = await fetch(`/api/products/${id}?key=${encodeURIComponent(adminKey)}`, {
+    const res = await fetch(`/api/products/${id}`, {
       method: "DELETE",
     });
     if (res.ok) {

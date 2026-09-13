@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getBouquetById } from "@/lib/products";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import Order from "@/models/Order";
@@ -90,14 +92,11 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ order: orderDoc }, { status: 201 });
 }
 
-// GET /api/orders?key=ADMIN_API_KEY — used by the admin dashboard.
-// This is a lightweight placeholder, NOT real authentication.
-// Replace with proper admin login (Phase 3) before going live.
-export async function GET(req: NextRequest) {
-  const key = req.nextUrl.searchParams.get("key");
-  const expected = process.env.ADMIN_API_KEY;
-
-  if (!expected || key !== expected) {
+// GET /api/orders — used by the admin dashboard. Requires a real
+// logged-in admin session (Phase 3) — replaces the old shared key.
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
