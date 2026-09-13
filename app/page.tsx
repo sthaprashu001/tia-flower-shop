@@ -8,9 +8,9 @@ export const dynamic = "force-dynamic";
 
 const STEPS = [
   { time: "01", title: "Browse", body: "See today's available bouquets and prices." },
-  { time: "02", title: "Choose a time", body: "Pick when you'll be near TIA — arrival or departure." },
-  { time: "03", title: "We prepare", body: "Your bouquet is made fresh, ~2 minutes from the terminal." },
-  { time: "04", title: "Meet & receive", body: "We hand it to you near TIA. Free, no detour needed." },
+  { time: "02", title: "Choose a time", body: "Pick when you'll be near TIA" },
+  { time: "03", title: "We prepare", body: "Your bouquet is made fresh, at home." },
+  { time: "04", title: "Meet & receive", body: "We hand it to you near TIA. Free, no delivery cost." },
 ];
 
 export default async function HomePage() {
@@ -30,7 +30,7 @@ export default async function HomePage() {
           </div>
 
           <h1 className="max-w-2xl font-display text-4xl italic leading-tight sm:text-5xl">
-            For every hello, goodbye, and journey.
+            Flowers for arrivals & farewells.
           </h1>
           <p className="mt-4 max-w-lg text-ivory/75">
             Sending someone abroad or welcoming them home? We’ll prepare fresh flowers for your special moment and have them ready near TIA when you need them.
