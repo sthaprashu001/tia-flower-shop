@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Order, OrderStatus, Bouquet } from "@/lib/types";
+import { Order, OrderStatus, Bouquet, ShopStatus } from "@/lib/types";
 
 const STATUS_OPTIONS: OrderStatus[] = [
   "PENDING",
@@ -31,6 +31,17 @@ export default function AdminDashboardPage() {
   const [staffError, setStaffError] = useState<string | null>(null);
   const [staffSaving, setStaffSaving] = useState(false);
   const [staffAdded, setStaffAdded] = useState(false);
+
+  // Order status saving (per-order, keyed by order id)
+  const [savingStatus, setSavingStatus] = useState<Record<string, boolean>>({});
+  const [statusError, setStatusError] = useState<Record<string, string>>({});
+
+  // Live shop settings (status + hourly capacity)
+  const [shopStatus, setShopStatus] = useState<ShopStatus>("OPEN");
+  const [capacityPerHour, setCapacityPerHour] = useState<number>(8);
+  const [capacityInput, setCapacityInput] = useState("8");
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   useEffect(() => {
     // Middleware already blocks unauthenticated requests to this route,
@@ -62,7 +73,86 @@ export default function AdminDashboardPage() {
       .then((data) => setOrders(data.orders || []))
       .catch(() => setError("Could not load orders."))
       .finally(() => setLoading(false));
+
+    fetch("/api/shop-settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status) setShopStatus(data.status);
+        if (data.capacityPerHour) {
+          setCapacityPerHour(data.capacityPerHour);
+          setCapacityInput(String(data.capacityPerHour));
+        }
+      })
+      .catch(() => {
+        // Non-critical — falls back to defaults already in state.
+      });
   }, [authStatus, router]);
+
+  async function handleStatusChange(orderId: string, newStatus: OrderStatus) {
+    setSavingStatus((s) => ({ ...s, [orderId]: true }));
+    setStatusError((e) => ({ ...e, [orderId]: "" }));
+
+    const previous = orders.find((o) => o.id === orderId)?.status;
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Could not save status.");
+    } catch {
+      // Roll back on failure
+      setOrders((prev) => prev.map((o) => (o.id === orderId && previous ? { ...o, status: previous } : o)));
+      setStatusError((e) => ({ ...e, [orderId]: "Could not save — try again." }));
+    } finally {
+      setSavingStatus((s) => ({ ...s, [orderId]: false }));
+    }
+  }
+
+  async function handleSetShopStatus(newStatus: ShopStatus) {
+    setSettingsSaving(true);
+    setSettingsError(null);
+    const previous = shopStatus;
+    setShopStatus(newStatus);
+
+    try {
+      const res = await fetch("/api/shop-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not update status.");
+    } catch (err) {
+      setShopStatus(previous);
+      setSettingsError(err instanceof Error ? err.message : "Could not update status.");
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
+  async function handleSetCapacity(e: React.FormEvent) {
+    e.preventDefault();
+    setSettingsSaving(true);
+    setSettingsError(null);
+
+    try {
+      const res = await fetch("/api/shop-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ capacityPerHour: Number(capacityInput) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not update capacity.");
+      setCapacityPerHour(data.capacityPerHour);
+    } catch (err) {
+      setSettingsError(err instanceof Error ? err.message : "Could not update capacity.");
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
 
   async function handleAddStaff(e: React.FormEvent) {
     e.preventDefault();
@@ -120,11 +210,54 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Note about what's wired up vs. placeholder */}
-      <div className="mt-4 rounded-card border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        <strong>Scaffold note:</strong> Order status changes below are
-        display-only for now (no PATCH endpoint yet). See{" "}
-        <code>docs/NEXT_STEPS.md</code> for what to build next.
+      <div className="mt-6 rounded-card border border-sand bg-white p-5">
+        <h2 className="font-display text-lg italic text-charcoal">Shop settings</h2>
+        <p className="mt-1 text-sm text-charcoal/60">
+          Changes here apply immediately on the live site — no redeploy needed.
+        </p>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-charcoal">Status:</span>
+          {(["OPEN", "BUSY", "CLOSED"] as ShopStatus[]).map((s) => (
+            <button
+              key={s}
+              onClick={() => handleSetShopStatus(s)}
+              disabled={settingsSaving}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition disabled:opacity-60 ${
+                shopStatus === s
+                  ? "bg-charcoal text-ivory"
+                  : "border border-sand text-charcoal hover:border-rose"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={handleSetCapacity} className="mt-4 flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+              Max orders per hour
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={capacityInput}
+              onChange={(e) => setCapacityInput(e.target.value)}
+              className="mt-1 w-24 rounded-md border border-sand px-3 py-1.5"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={settingsSaving}
+            className="rounded-full border border-sand px-4 py-1.5 text-sm font-semibold text-charcoal hover:border-rose disabled:opacity-60"
+          >
+            Save
+          </button>
+          <span className="text-xs text-charcoal/50">Currently {capacityPerHour}/hour</span>
+        </form>
+
+        {settingsError && <p className="mt-3 text-sm text-rose-dark">{settingsError}</p>}
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -168,15 +301,23 @@ export default function AdminDashboardPage() {
                     {order.phone} · {order.date} {order.time} · {order.meetingLocation}
                   </p>
                 </div>
-                <select
-                  defaultValue={order.status}
-                  className="rounded-md border border-sand px-2 py-1 text-sm"
-                >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={order.status}
+                    onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                    disabled={savingStatus[order.id]}
+                    className="rounded-md border border-sand px-2 py-1 text-sm disabled:opacity-60"
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  {savingStatus[order.id] && <span className="text-xs text-charcoal/40">Saving…</span>}
+                </div>
               </div>
+              {statusError[order.id] && (
+                <p className="mt-1 text-xs text-rose-dark">{statusError[order.id]}</p>
+              )}
 
               <ul className="mt-2 text-sm text-charcoal/70">
                 {order.items.map((item) => (

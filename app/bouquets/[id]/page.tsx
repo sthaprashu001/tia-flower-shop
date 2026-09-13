@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getBouquetById } from "@/lib/products";
+import AddToCartButton from "@/components/AddToCartButton";
 
 // Bouquets can be added/edited any time from the admin panel, so this page
 // is rendered fresh on every request instead of pre-generated at build time.
@@ -48,17 +49,12 @@ export default async function BouquetDetailPage({ params }: { params: { id: stri
             </p>
           )}
 
-          <Link
-            href={`/order?bouquet=${bouquet.id}`}
-            aria-disabled={!bouquet.available}
-            className={`mt-6 inline-block rounded-full px-6 py-3 text-sm font-semibold text-ivory transition ${
-              bouquet.available
-                ? "bg-rose hover:bg-rose-dark"
-                : "pointer-events-none bg-charcoal/30"
-            }`}
-          >
-            {bouquet.available ? "Add to order" : "Currently unavailable"}
-          </Link>
+          <AddToCartButton bouquetId={bouquet.id} available={bouquet.available} variant="full" />
+          {bouquet.available && (
+            <p className="mt-2 text-xs text-charcoal/50">
+              Added to cart — <Link href="/cart" className="underline hover:text-rose-dark">view cart</Link> when ready to order.
+            </p>
+          )}
         </div>
       </div>
     </div>

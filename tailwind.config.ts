@@ -8,13 +8,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ivory: "#FFFBF6",
-        sand: "#F1E4D6",
+        ivory: "#FFFFFF",
+        sand: "#ECE7E0",
         charcoal: "#262321",
         rose: {
-          DEFAULT: "#B3294F",
-          dark: "#8C1F3E",
-          light: "#F6DCE0",
+          DEFAULT: "#E23B5D",
+          dark: "#C22348",
+          light: "#FDE4E9",
         },
         sage: {
           DEFAULT: "#4B5D46",

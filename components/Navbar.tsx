@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ShopStatusBadge from "./ShopStatusBadge";
+import CartIcon from "./CartIcon";
 
 const links = [
   { href: "/bouquets", label: "Bouquets" },
@@ -29,6 +30,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-3">
           <ShopStatusBadge compact />
+          <CartIcon />
           <Link
             href="/order"
             className="hidden rounded-full bg-rose px-4 py-2 text-sm font-semibold text-ivory transition hover:bg-rose-dark sm:inline-block"

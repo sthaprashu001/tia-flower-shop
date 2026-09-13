@@ -1,11 +1,13 @@
 import Link from "next/link";
 import WhatsAppButton from "./WhatsAppButton";
 
+// Set these in Vercel → Settings → Environment Variables (no code changes
+// needed). Any link left blank simply won't show up in the footer.
 const SOCIALS = [
-  { label: "TikTok", href: "https://www.tiktok.com/" },
-  { label: "Instagram", href: "https://www.instagram.com/" },
-  { label: "Facebook", href: "https://www.facebook.com/" },
-];
+  { label: "TikTok", href: process.env.NEXT_PUBLIC_TIKTOK_URL },
+  { label: "Instagram", href: process.env.NEXT_PUBLIC_INSTAGRAM_URL },
+  { label: "Facebook", href: process.env.NEXT_PUBLIC_FACEBOOK_URL },
+].filter((s): s is { label: string; href: string } => Boolean(s.href));
 
 export default function Footer() {
   return (

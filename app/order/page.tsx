@@ -2,18 +2,18 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bouquet, OrderItem } from "@/lib/types";
+import Link from "next/link";
+import { Bouquet } from "@/lib/types";
+import { useCart } from "@/components/CartProvider";
 
 function OrderForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselected = searchParams.get("bouquet");
+  const { items, hydrated, addItem, removeItem, setQuantity, clear } = useCart();
 
   const [bouquets, setBouquets] = useState<Bouquet[]>([]);
   const [loadingBouquets, setLoadingBouquets] = useState(true);
-  const [items, setItems] = useState<OrderItem[]>(
-    preselected ? [{ bouquetId: preselected, quantity: 1 }] : []
-  );
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [date, setDate] = useState("");
@@ -32,33 +32,31 @@ function OrderForm() {
       .finally(() => setLoadingBouquets(false));
   }, []);
 
-  const available = bouquets.filter((b) => b.available);
+  // Backward-compat: a bouquet detail page (or old link) can still land here
+  // with ?bouquet=<id> — add it to the cart once, on first load.
+  useEffect(() => {
+    if (preselected && hydrated && !items.some((i) => i.bouquetId === preselected)) {
+      addItem(preselected, 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselected, hydrated]);
 
-  function toggleBouquet(id: string) {
-    setItems((prev) => {
-      const exists = prev.find((i) => i.bouquetId === id);
-      if (exists) return prev.filter((i) => i.bouquetId !== id);
-      return [...prev, { bouquetId: id, quantity: 1 }];
-    });
-  }
+  const lines = items
+    .map((item) => {
+      const bouquet = bouquets.find((b) => b.id === item.bouquetId);
+      return bouquet ? { ...item, bouquet } : null;
+    })
+    .filter((l): l is { bouquetId: string; quantity: number; bouquet: Bouquet } => l !== null);
 
-  function setQuantity(id: string, quantity: number) {
-    setItems((prev) =>
-      prev.map((i) => (i.bouquetId === id ? { ...i, quantity: Math.max(1, quantity) } : i))
-    );
-  }
-
-  const total = items.reduce((sum, item) => {
-    const b = bouquets.find((x) => x.id === item.bouquetId);
-    return sum + (b ? b.price * item.quantity : 0);
-  }, 0);
+  const total = lines.reduce((sum, l) => sum + l.bouquet.price * l.quantity, 0);
+  const cartEmpty = hydrated && !loadingBouquets && lines.length === 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (items.length === 0) {
-      setError("Please select at least one bouquet.");
+    if (lines.length === 0) {
+      setError("Your cart is empty — add a bouquet first.");
       return;
     }
 
@@ -70,7 +68,7 @@ function OrderForm() {
         body: JSON.stringify({
           customerName,
           phone,
-          items,
+          items: lines.map((l) => ({ bouquetId: l.bouquetId, quantity: l.quantity })),
           date,
           time,
           meetingLocation,
@@ -87,6 +85,7 @@ function OrderForm() {
       }
 
       sessionStorage.setItem("lastOrder", JSON.stringify(data.order));
+      clear();
       router.push("/order/confirmation");
     } catch {
       setError("Could not reach the server. Please check your connection and try again.");
@@ -102,192 +101,207 @@ function OrderForm() {
         shortly after you submit it.
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-8">
-        {/* Bouquet selection */}
-        <fieldset>
-          <legend className="font-display text-lg text-charcoal">Choose bouquets</legend>
-          {loadingBouquets && <p className="mt-2 text-sm text-charcoal/60">Loading bouquets…</p>}
-          <div className="mt-3 space-y-2">
-            {available.map((b) => {
-              const selected = items.find((i) => i.bouquetId === b.id);
-              return (
-                <div
-                  key={b.id}
-                  className={`flex items-center justify-between rounded-card border px-4 py-3 ${
-                    selected ? "border-rose bg-rose-light/30" : "border-sand"
-                  }`}
-                >
-                  <label className="flex flex-1 cursor-pointer items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(selected)}
-                      onChange={() => toggleBouquet(b.id)}
-                      className="h-4 w-4 accent-rose"
-                    />
-                    <span>
-                      <span className="block text-sm font-medium text-charcoal">{b.name}</span>
-                      <span className="block font-mono text-xs text-charcoal/60">
-                        Rs. {b.price.toLocaleString("en-IN")}
-                      </span>
-                    </span>
-                  </label>
+      {(loadingBouquets || !hydrated) && (
+        <p className="mt-6 text-sm text-charcoal/60">Loading your cart…</p>
+      )}
 
-                  {selected && (
-                    <input
-                      type="number"
-                      min={1}
-                      value={selected.quantity}
-                      onChange={(e) => setQuantity(b.id, Number(e.target.value))}
-                      className="w-16 rounded-md border border-sand px-2 py-1 text-center"
-                      aria-label={`Quantity for ${b.name}`}
-                    />
-                  )}
+      {cartEmpty && (
+        <div className="mt-8 rounded-card border border-sand bg-white p-8 text-center">
+          <p className="text-charcoal/70">Your cart is empty.</p>
+          <Link
+            href="/bouquets"
+            className="mt-4 inline-block rounded-full bg-rose px-6 py-2.5 text-sm font-semibold text-ivory hover:bg-rose-dark"
+          >
+            Browse bouquets
+          </Link>
+        </div>
+      )}
+
+      {lines.length > 0 && (
+        <form onSubmit={handleSubmit} className="mt-8 space-y-8">
+          {/* Cart summary */}
+          <fieldset>
+            <legend className="font-display text-lg text-charcoal">Your bouquets</legend>
+            <div className="mt-3 space-y-2">
+              {lines.map(({ bouquetId, quantity, bouquet }) => (
+                <div key={bouquetId} className="flex items-center gap-3 rounded-card border border-sand bg-white p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={bouquet.image}
+                    alt={bouquet.name}
+                    className="h-14 w-14 flex-shrink-0 rounded-md object-cover"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-charcoal">{bouquet.name}</p>
+                    <p className="font-mono text-xs text-charcoal/60">
+                      Rs. {bouquet.price.toLocaleString("en-IN")}
+                    </p>
+                  </div>
+                  <input
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={(e) => setQuantity(bouquetId, Number(e.target.value))}
+                    className="w-16 rounded-md border border-sand px-2 py-1 text-center"
+                    aria-label={`Quantity for ${bouquet.name}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeItem(bouquetId)}
+                    aria-label={`Remove ${bouquet.name}`}
+                    className="text-charcoal/40 hover:text-rose-dark"
+                  >
+                    ✕
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-        </fieldset>
+              ))}
+            </div>
+            <Link href="/bouquets" className="mt-3 inline-block text-sm text-rose-dark hover:underline">
+              + Add more bouquets
+            </Link>
+          </fieldset>
 
-        {/* Contact */}
-        <fieldset className="space-y-3">
-          <legend className="font-display text-lg text-charcoal">Your details</legend>
-          <div>
-            <label className="text-sm font-medium text-charcoal" htmlFor="customerName">
-              Full name
-            </label>
-            <input
-              id="customerName"
-              required
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-charcoal" htmlFor="phone">
-              Phone / WhatsApp number
-            </label>
-            <input
-              id="phone"
-              required
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="98XXXXXXXX"
-              className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-            />
-          </div>
-        </fieldset>
-
-        {/* Timing & location */}
-        <fieldset className="space-y-3">
-          <legend className="font-display text-lg text-charcoal">When &amp; where</legend>
-          <div className="grid gap-3 sm:grid-cols-2">
+          {/* Contact */}
+          <fieldset className="space-y-3">
+            <legend className="font-display text-lg text-charcoal">Your details</legend>
             <div>
-              <label className="text-sm font-medium text-charcoal" htmlFor="date">
-                Date
+              <label className="text-sm font-medium text-charcoal" htmlFor="customerName">
+                Full name
               </label>
               <input
-                id="date"
+                id="customerName"
                 required
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
                 className="mt-1 w-full rounded-md border border-sand px-3 py-2"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-charcoal" htmlFor="time">
-                Time
+              <label className="text-sm font-medium text-charcoal" htmlFor="phone">
+                Phone / WhatsApp number
               </label>
               <input
-                id="time"
+                id="phone"
                 required
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="98XXXXXXXX"
                 className="mt-1 w-full rounded-md border border-sand px-3 py-2"
               />
             </div>
-          </div>
-          <p className="text-xs text-charcoal/60">
-            Please allow at least 30–60 minutes so we can prepare it fresh.
-          </p>
-          <div>
-            <label className="text-sm font-medium text-charcoal" htmlFor="meetingLocation">
-              Meeting point near TIA
-            </label>
-            <input
-              id="meetingLocation"
-              required
-              value={meetingLocation}
-              onChange={(e) => setMeetingLocation(e.target.value)}
-              placeholder="e.g. Arrival gate, international terminal"
-              className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-            />
+          </fieldset>
+
+          {/* Timing & location */}
+          <fieldset className="space-y-3">
+            <legend className="font-display text-lg text-charcoal">When &amp; where</legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-charcoal" htmlFor="date">
+                  Date
+                </label>
+                <input
+                  id="date"
+                  required
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-sand px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-charcoal" htmlFor="time">
+                  Time
+                </label>
+                <input
+                  id="time"
+                  required
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-sand px-3 py-2"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-charcoal/60">
+              Please allow at least 30–60 minutes so we can prepare it fresh.
+            </p>
+            <div>
+              <label className="text-sm font-medium text-charcoal" htmlFor="meetingLocation">
+                Meeting point near TIA
+              </label>
+              <input
+                id="meetingLocation"
+                required
+                value={meetingLocation}
+                onChange={(e) => setMeetingLocation(e.target.value)}
+                placeholder="e.g. Arrival gate, international terminal"
+                className="mt-1 w-full rounded-md border border-sand px-3 py-2"
+              />
+              <p className="mt-1 text-xs text-charcoal/60">
+                We'll confirm the exact spot with you on WhatsApp.
+              </p>
+            </div>
+          </fieldset>
+
+          {/* Customization & message */}
+          <fieldset className="space-y-3">
+            <legend className="font-display text-lg text-charcoal">Customize (optional)</legend>
+            <div>
+              <label className="text-sm font-medium text-charcoal" htmlFor="customizationNote">
+                Special requests
+              </label>
+              <textarea
+                id="customizationNote"
+                value={customizationNote}
+                onChange={(e) => setCustomizationNote(e.target.value)}
+                rows={3}
+                placeholder='e.g. "10 red roses, white wrapping, blue ribbon"'
+                className="mt-1 w-full rounded-md border border-sand px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-charcoal" htmlFor="personalMessage">
+                Personal message (goes on the card)
+              </label>
+              <textarea
+                id="personalMessage"
+                value={personalMessage}
+                onChange={(e) => setPersonalMessage(e.target.value)}
+                rows={2}
+                placeholder="Welcome home! ❤️"
+                className="mt-1 w-full rounded-md border border-sand px-3 py-2"
+              />
+            </div>
+          </fieldset>
+
+          {/* Total & submit */}
+          <div className="rounded-card border border-sand bg-white p-4">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-charcoal">Total</span>
+              <span className="font-mono text-lg font-bold text-rose-dark">
+                Rs. {total.toLocaleString("en-IN")}
+              </span>
+            </div>
             <p className="mt-1 text-xs text-charcoal/60">
-              We'll confirm the exact spot with you on WhatsApp.
+              Payment is arranged with you on WhatsApp after we confirm — cash
+              or online payment, no gateway needed right now.
             </p>
           </div>
-        </fieldset>
 
-        {/* Customization & message */}
-        <fieldset className="space-y-3">
-          <legend className="font-display text-lg text-charcoal">Customize (optional)</legend>
-          <div>
-            <label className="text-sm font-medium text-charcoal" htmlFor="customizationNote">
-              Special requests
-            </label>
-            <textarea
-              id="customizationNote"
-              value={customizationNote}
-              onChange={(e) => setCustomizationNote(e.target.value)}
-              rows={3}
-              placeholder='e.g. "10 red roses, white wrapping, blue ribbon"'
-              className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-charcoal" htmlFor="personalMessage">
-              Personal message (goes on the card)
-            </label>
-            <textarea
-              id="personalMessage"
-              value={personalMessage}
-              onChange={(e) => setPersonalMessage(e.target.value)}
-              rows={2}
-              placeholder="Welcome home! ❤️"
-              className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-            />
-          </div>
-        </fieldset>
+          {error && (
+            <p className="rounded-card bg-rose-light px-4 py-3 text-sm text-rose-dark">{error}</p>
+          )}
 
-        {/* Total & submit */}
-        <div className="rounded-card border border-sand bg-white p-4">
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-charcoal">Total</span>
-            <span className="font-mono text-lg font-bold text-rose-dark">
-              Rs. {total.toLocaleString("en-IN")}
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-charcoal/60">
-            Payment is arranged with you on WhatsApp after we confirm — cash
-            or online payment, no gateway needed right now.
-          </p>
-        </div>
-
-        {error && (
-          <p className="rounded-card bg-rose-light px-4 py-3 text-sm text-rose-dark">{error}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-full bg-rose px-6 py-3 text-sm font-semibold text-ivory transition hover:bg-rose-dark disabled:opacity-60"
-        >
-          {submitting ? "Submitting..." : "Submit order"}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full rounded-full bg-rose px-6 py-3 text-sm font-semibold text-ivory transition hover:bg-rose-dark disabled:opacity-60"
+          >
+            {submitting ? "Submitting..." : "Submit order"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

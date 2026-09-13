@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Bouquet } from "@/lib/types";
+import AddToCartButton from "./AddToCartButton";
 
 export default function BouquetCard({ bouquet }: { bouquet: Bouquet }) {
   return (
@@ -39,6 +40,7 @@ export default function BouquetCard({ bouquet }: { bouquet: Bouquet }) {
             Customizable
           </span>
         )}
+        <AddToCartButton bouquetId={bouquet.id} available={bouquet.available} />
       </div>
     </Link>
   );

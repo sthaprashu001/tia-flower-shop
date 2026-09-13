@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+import { CartProvider } from "@/components/CartProvider";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -40,10 +41,12 @@ export default function RootLayout({
     <html lang="en" className={`${fraunces.variable} ${inter.variable} ${spaceMono.variable}`}>
       <body className="font-body flex min-h-screen flex-col">
         <SessionProviderWrapper>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <WhatsAppButton floating />
+          <CartProvider>
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <WhatsAppButton floating />
+          </CartProvider>
         </SessionProviderWrapper>
       </body>
     </html>
