@@ -13,17 +13,30 @@ const STEPS = [
   { title: "Meet & receive", body: "We hand it to you near TIA. Free, no delivery cost." },
 ];
 
+const COLLAGE_POSITIONS: Record<number, string[]> = {
+  1: ["left-1/2 top-0 -translate-x-1/2 z-20"],
+  2: [
+    "left-1/2 top-2 -translate-x-[75%] rotate-[-5deg] z-10",
+    "left-1/2 top-0 -translate-x-[25%] rotate-[5deg] z-20",
+  ],
+  3: [
+    "left-1/2 top-2 -translate-x-[80%] rotate-[-6deg] z-10",
+    "left-1/2 top-0 -translate-x-1/2 z-20",
+    "left-1/2 top-2 -translate-x-[20%] rotate-[6deg] z-10",
+  ],
+};
+
 export default async function HomePage() {
   const bouquets = await getAllBouquets();
   const available = bouquets.filter((b) => b.available).slice(0, 4);
-  const heroBouquet = available[0];
+  const collage = available.slice(0, 3);
 
   return (
     <div>
       {/* Hero */}
       <section className="bg-cream">
-        <div className="mx-auto grid max-w-5xl gap-10 px-4 py-14 sm:py-20 lg:grid-cols-2 lg:items-center lg:gap-16">
-          <div className="order-2 lg:order-1">
+        <div className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:py-16 lg:grid-cols-2 lg:items-center lg:gap-16">
+          <div>
             <ShopStatusBadge />
             <h1 className="mt-5 max-w-md font-display text-4xl italic leading-tight text-charcoal sm:text-5xl">
               Flowers for arrivals &amp; farewells.
@@ -45,17 +58,20 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {heroBouquet && (
-            <div className="order-1 lg:order-2">
-              <div className="relative mx-auto max-w-sm">
-                <div className="absolute -inset-3 -z-10 rounded-[2rem] bg-rose/10" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={heroBouquet.image}
-                  alt={heroBouquet.name}
-                  className="aspect-[4/5] w-full rounded-[1.75rem] object-cover shadow-lg shadow-charcoal/10"
-                />
-              </div>
+          {collage.length > 0 && (
+            <div className="relative mx-auto h-52 w-full max-w-xs sm:h-64 lg:mx-0 lg:h-72 lg:max-w-none">
+              {collage.map((b, i) => {
+                const positions = COLLAGE_POSITIONS[collage.length];
+                return (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={b.id}
+                    src={b.image}
+                    alt={b.name}
+                    className={`absolute h-40 w-32 rounded-2xl object-cover shadow-lg shadow-charcoal/15 sm:h-52 sm:w-40 lg:h-60 lg:w-44 ${positions[i]}`}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
