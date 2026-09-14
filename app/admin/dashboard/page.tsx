@@ -201,21 +201,21 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-3xl italic text-charcoal">Admin dashboard</h1>
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="font-display text-2xl italic text-charcoal sm:text-3xl">Admin dashboard</h1>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {authSession?.user?.email && (
-            <span className="text-sm text-charcoal/50">{authSession.user.email}</span>
+            <span className="min-w-0 truncate text-sm text-charcoal/50">{authSession.user.email}</span>
           )}
           <button
             onClick={() => router.push("/admin/products")}
-            className="text-sm font-semibold text-rose-dark hover:underline"
+            className="whitespace-nowrap text-sm font-semibold text-rose-dark hover:underline"
           >
             Manage bouquets →
           </button>
           <button
             onClick={() => signOut({ callbackUrl: "/admin/login" })}
-            className="text-sm text-charcoal/60 hover:text-rose-dark"
+            className="whitespace-nowrap text-sm text-charcoal/60 hover:text-rose-dark"
           >
             Log out
           </button>

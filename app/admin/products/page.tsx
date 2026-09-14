@@ -175,11 +175,11 @@ export default function AdminProductsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-3xl italic text-charcoal">Manage bouquets</h1>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="font-display text-2xl italic text-charcoal sm:text-3xl">Manage bouquets</h1>
         <button
           onClick={() => router.push("/admin/dashboard")}
-          className="text-sm text-charcoal/60 hover:text-rose-dark"
+          className="self-start text-sm text-charcoal/60 hover:text-rose-dark"
         >
           ← Back to dashboard
         </button>

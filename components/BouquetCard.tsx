@@ -27,8 +27,8 @@ export default function BouquetCard({ bouquet }: { bouquet: Bouquet }) {
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-display text-lg text-charcoal">{bouquet.name}</h3>
-          <span className="whitespace-nowrap font-mono text-sm font-bold text-rose-dark">
+          <h3 className="min-w-0 truncate font-display text-lg text-charcoal">{bouquet.name}</h3>
+          <span className="flex-shrink-0 whitespace-nowrap font-mono text-sm font-bold text-rose-dark">
             Rs. {bouquet.price.toLocaleString("en-IN")}
           </span>
         </div>
