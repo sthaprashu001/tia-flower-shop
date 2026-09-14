@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import BouquetCard from "@/components/BouquetCard";
 import ShopStatusBadge from "@/components/ShopStatusBadge";
 import WhatsAppButton from "@/components/WhatsAppButton";
@@ -63,13 +64,19 @@ export default async function HomePage() {
               {collage.map((b, i) => {
                 const positions = COLLAGE_POSITIONS[collage.length];
                 return (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <div
                     key={b.id}
-                    src={b.image}
-                    alt={b.name}
-                    className={`absolute h-40 w-32 rounded-2xl object-cover shadow-lg shadow-charcoal/15 sm:h-52 sm:w-40 lg:h-60 lg:w-44 ${positions[i]}`}
-                  />
+                    className={`absolute h-40 w-32 overflow-hidden rounded-2xl shadow-lg shadow-charcoal/15 sm:h-52 sm:w-40 lg:h-60 lg:w-44 ${positions[i]}`}
+                  >
+                    <Image
+                      src={b.image}
+                      alt={`${b.name} — fresh bouquet delivery near TIA, Kathmandu`}
+                      fill
+                      sizes="176px"
+                      className="object-cover"
+                      priority={i === 1}
+                    />
+                  </div>
                 );
               })}
             </div>

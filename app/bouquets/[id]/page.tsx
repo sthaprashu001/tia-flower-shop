@@ -1,11 +1,36 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import { Metadata } from "next";
 import { getBouquetById } from "@/lib/products";
 import AddToCartButton from "@/components/AddToCartButton";
 
 // Bouquets can be added/edited any time from the admin panel, so this page
 // is rendered fresh on every request instead of pre-generated at build time.
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
+  const bouquet = await getBouquetById(params.id);
+  if (!bouquet) return {};
+
+  const description = bouquet.description
+    ? `${bouquet.description} Fresh, delivered near Tribhuvan International Airport, Kathmandu.`
+    : `${bouquet.name} — fresh bouquet delivered near Tribhuvan International Airport, Kathmandu.`;
+
+  return {
+    title: `${bouquet.name} — Rs. ${bouquet.price}`,
+    description,
+    openGraph: {
+      title: `${bouquet.name} | TIA Flower Shop`,
+      description,
+      images: bouquet.image ? [{ url: bouquet.image }] : undefined,
+    },
+  };
+}
 
 export default async function BouquetDetailPage({ params }: { params: { id: string } }) {
   const bouquet = await getBouquetById(params.id);
@@ -18,12 +43,14 @@ export default async function BouquetDetailPage({ params }: { params: { id: stri
       </Link>
 
       <div className="mt-4 grid gap-8 sm:grid-cols-2">
-        <div className="aspect-square overflow-hidden rounded-card border border-sand bg-sand">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+        <div className="relative aspect-square overflow-hidden rounded-card border border-sand bg-sand">
+          <Image
             src={bouquet.image}
-            alt={bouquet.name}
-            className="h-full w-full object-cover"
+            alt={`${bouquet.name} — fresh bouquet delivery near TIA, Kathmandu`}
+            fill
+            sizes="(max-width: 640px) 100vw, 50vw"
+            className="object-cover"
+            priority
           />
         </div>
 

@@ -6,6 +6,8 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Bouquets | TIA Flower Shop",
+  description:
+    "Browse today's fresh bouquets, ready for pickup near Tribhuvan International Airport, Kathmandu. Order online for arrivals and departures.",
 };
 
 export default async function BouquetsPage() {
