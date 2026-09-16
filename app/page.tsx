@@ -20,7 +20,7 @@ export default async function HomePage() {
   
   // Get featured items sorted by featuredOrder
   const featured = bouquets
-    .filter((b) => b.featured)
+    .filter((b) => b.featured && b.featured === true)
     .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0));
   
   // Separate bouquets from other categories
@@ -39,8 +39,16 @@ export default async function HomePage() {
     featuredOthers[3],
   ].filter(Boolean); // Remove undefined items
   
-  // For the "Today's items" section, show first 4 available items
-  const todayItems = bouquets.filter((b) => b.available).slice(0, 4);
+  // For "Today's items": sort by category (bouquets first), then take first 4
+  const available = bouquets.filter((b) => b.available);
+  const todayItems = available
+    .sort((a, b) => {
+      // Bouquets come first
+      if (a.category === "Bouquets" && b.category !== "Bouquets") return -1;
+      if (a.category !== "Bouquets" && b.category === "Bouquets") return 1;
+      return 0;
+    })
+    .slice(0, 4);
 
   return (
     <div>
@@ -69,7 +77,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {collage.length > 0 && (
+          {collage.length > 0 ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {collage.map((item) => (
                 <div
@@ -102,6 +110,10 @@ export default async function HomePage() {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="mt-8 rounded-lg border border-sand/30 bg-sand/10 p-8 text-center">
+              <p className="text-sm text-charcoal/60">Featured products coming soon. Mark products as featured in admin panel.</p>
             </div>
           )}
         </div>

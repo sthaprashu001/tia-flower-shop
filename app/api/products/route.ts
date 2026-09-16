@@ -19,7 +19,13 @@ export async function GET() {
     // form, homepage, bouquet cards) expects a plain `id` field like the
     // mock catalog uses. Add both so the admin panel (which reads `_id`)
     // and everything else (which reads `id`) work without extra changes.
-    const products = rawProducts.map((p) => ({ ...p, id: String(p._id), _id: String(p._id) }));
+    const products = rawProducts.map((p) => ({ 
+      ...p, 
+      id: String(p._id), 
+      _id: String(p._id),
+      featured: p.featured === true, // ensure boolean
+      featuredOrder: Number(p.featuredOrder) || 0, // ensure number
+    }));
     return NextResponse.json({ source: "database", products });
   } catch (err) {
     console.error("Failed to load products from database:", err);
