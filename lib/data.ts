@@ -21,6 +21,7 @@ export const bouquets: Bouquet[] = [
     image: "/images/red-rose-black-cover.jpeg",
     available: true,
     customizable: true,
+    category: "Bouquets",
   },
   {
     id: "red-rose-classic-2",
@@ -31,6 +32,7 @@ export const bouquets: Bouquet[] = [
     image: "/images/red-rose.svg",
     available: true,
     customizable: true,
+    category: "Bouquets",
   },
   {
     id: "mixed-flower",
@@ -41,6 +43,7 @@ export const bouquets: Bouquet[] = [
     image: "/images/mixed-flower.svg",
     available: true,
     customizable: true,
+    category: "Bouquets",
   },
   {
     id: "ribbon-rose",
@@ -51,6 +54,7 @@ export const bouquets: Bouquet[] = [
     image: "/images/ribbon-rose.svg",
     available: true,
     customizable: false,
+    category: "Bouquets",
   },
   {
     id: "small-real",
@@ -61,6 +65,7 @@ export const bouquets: Bouquet[] = [
     image: "/images/small-bunch.svg",
     available: false,
     customizable: false,
+    category: "Bouquets",
   },
   {
     id: "custom",
@@ -71,6 +76,7 @@ export const bouquets: Bouquet[] = [
     image: "/images/custom.svg",
     available: true,
     customizable: true,
+    category: "Bouquets",
   },
 ];
 

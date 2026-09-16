@@ -27,6 +27,7 @@ interface AdminProduct {
   available: boolean;
   customizable: boolean;
   cost?: number;
+  category?: string;
 }
 
 const emptyForm = {
@@ -37,12 +38,14 @@ const emptyForm = {
   available: true,
   customizable: false,
   cost: "",
+  category: "Bouquets",
 };
 
 export default function AdminProductsPage() {
   const router = useRouter();
   const { status: authStatus } = useSession();
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [source, setSource] = useState<"mock" | "database" | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,10 +69,15 @@ export default function AdminProductsPage() {
   async function loadProducts() {
     setLoading(true);
     try {
-      const res = await fetch("/api/products");
-      const data = await res.json();
-      setProducts(data.products || []);
-      setSource(data.source || null);
+      const [productsRes, categoriesRes] = await Promise.all([
+        fetch("/api/products"),
+        fetch("/api/categories"),
+      ]);
+      const productsData = await productsRes.json();
+      const categoriesData = await categoriesRes.json();
+      setProducts(productsData.products || []);
+      setCategories(categoriesData.categories || ["Bouquets"]);
+      setSource(productsData.source || null);
     } catch {
       setError("Could not load products.");
     } finally {
@@ -87,6 +95,7 @@ export default function AdminProductsPage() {
       available: p.available,
       customizable: p.customizable,
       cost: p.cost ? String(p.cost) : "",
+      category: p.category || "Bouquets",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -137,6 +146,7 @@ export default function AdminProductsPage() {
       available: form.available,
       customizable: form.customizable,
       cost: form.cost ? Number(form.cost) : 0,
+      category: form.category.trim() || "Bouquets",
     };
 
     try {
@@ -229,6 +239,25 @@ export default function AdminProductsPage() {
               className="mt-1 w-full rounded-md border border-sand px-3 py-2"
               placeholder="950"
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+              Product Type / Category
+            </label>
+            <input
+              type="text"
+              list="categoryList"
+              value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              className="mt-1 w-full rounded-md border border-sand px-3 py-2"
+              placeholder="e.g. Bouquets, Khata, Flags"
+            />
+            <datalist id="categoryList">
+              {categories.map((cat) => (
+                <option key={cat} value={cat} />
+              ))}
+            </datalist>
           </div>
 
           <div className="sm:col-span-2">
@@ -344,7 +373,12 @@ export default function AdminProductsPage() {
               <div className="flex-1">
                 <p className="font-semibold text-charcoal">{p.name}</p>
                 <p className="text-sm text-charcoal/60">Rs. {p.price.toLocaleString("en-IN")}</p>
-                <p className="text-xs text-charcoal/50">
+                <div className="mt-1 flex gap-2">
+                  <span className="inline-block rounded-full bg-sage-light px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-sage-dark">
+                    {p.category || "Bouquets"}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-charcoal/50">
                   {p.available ? "Available" : "Unavailable"}
                   {p.customizable ? " · Customizable" : ""}
                 </p>

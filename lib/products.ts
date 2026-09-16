@@ -22,6 +22,7 @@ interface ProductDoc {
   image?: string;
   available: boolean;
   customizable: boolean;
+  category?: string;
 }
 
 function serialize(doc: ProductDoc): Bouquet {
@@ -33,6 +34,7 @@ function serialize(doc: ProductDoc): Bouquet {
     image: doc.image || "",
     available: doc.available,
     customizable: doc.customizable,
+    category: doc.category || "Bouquets", // default to "Bouquets" for backward compatibility
   };
 }
 
@@ -65,4 +67,36 @@ export async function getBouquetById(id: string): Promise<Bouquet | undefined> {
     console.error("Failed to load product from database, using mock data:", err);
     return getMockBouquetById(id);
   }
+}
+
+/**
+ * Get all distinct product categories in the database
+ */
+export async function getCategories(): Promise<string[]> {
+  if (!isDatabaseConfigured()) {
+    // Return distinct categories from mock data
+    const categories = new Set(mockBouquets.map((b) => b.category || "Bouquets"));
+    return Array.from(categories).sort();
+  }
+
+  try {
+    await connectToDatabase();
+    const categories = await Product.distinct("category").lean<string[]>();
+    // Filter out empty/null values and ensure default is included
+    const filtered = categories.filter((c) => c && c.trim());
+    if (!filtered.includes("Bouquets")) filtered.unshift("Bouquets");
+    return filtered.sort();
+  } catch (err) {
+    console.error("Failed to load categories from database:", err);
+    return ["Bouquets"];
+  }
+}
+
+/**
+ * Get all bouquets, optionally filtered by category
+ */
+export async function getAllBouquetsByCategory(category?: string): Promise<Bouquet[]> {
+  const all = await getAllBouquets();
+  if (!category) return all;
+  return all.filter((b) => b.category === category);
 }

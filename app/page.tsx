@@ -29,8 +29,45 @@ const COLLAGE_POSITIONS: Record<number, string[]> = {
 
 export default async function HomePage() {
   const bouquets = await getAllBouquets();
-  const available = bouquets.filter((b) => b.available).slice(0, 4);
-  const collage = available.slice(0, 3);
+  const available = bouquets.filter((b) => b.available);
+  
+  // Build a smart collage: one item per category (up to 3 items)
+  // If we have fewer categories, fill with remaining items
+  const collage = (() => {
+    if (available.length === 0) return [];
+    
+    // Group available items by category
+    const byCategory = new Map<string, typeof bouquets>();
+    for (const item of available) {
+      const cat = item.category || "Bouquets";
+      if (!byCategory.has(cat)) {
+        byCategory.set(cat, []);
+      }
+      byCategory.get(cat)!.push(item);
+    }
+    
+    // Take one item from each category, up to 3 categories
+    const result: typeof bouquets = [];
+    for (const [, items] of byCategory) {
+      if (result.length >= 3) break;
+      result.push(items[0]);
+    }
+    
+    // If we have fewer than 3, add more items from the beginning
+    if (result.length < 3) {
+      for (const item of available) {
+        if (result.length >= 3) break;
+        if (!result.includes(item)) {
+          result.push(item);
+        }
+      }
+    }
+    
+    return result;
+  })();
+  
+  // For the "Today's bouquets" section, show first 4 available items
+  const todayItems = available.slice(0, 4);
 
   return (
     <div>
@@ -109,13 +146,13 @@ export default async function HomePage() {
       <section className="bg-cream">
         <div className="mx-auto max-w-5xl px-4 py-16">
           <div className="flex items-end justify-between">
-            <h2 className="font-display text-2xl italic text-charcoal">Today's bouquets</h2>
+            <h2 className="font-display text-2xl italic text-charcoal">Today's items</h2>
             <Link href="/bouquets" className="text-sm font-semibold text-rose-dark hover:underline">
               View all →
             </Link>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {available.map((b) => (
+            {todayItems.map((b) => (
               <BouquetCard key={b.id} bouquet={b} />
             ))}
           </div>

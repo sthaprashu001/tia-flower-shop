@@ -8,6 +8,7 @@ export interface Bouquet {
   image: string;
   available: boolean;
   customizable: boolean;
+  category: string; // "Bouquets", "Khata", "Flags", etc.
 }
 
 export interface OrderItem {

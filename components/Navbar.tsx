@@ -1,9 +1,9 @@
 import Link from "next/link";
 import ShopStatusBadge from "./ShopStatusBadge";
 import CartIcon from "./CartIcon";
+import ProductCategories from "./ProductCategories";
 
 const links = [
-  { href: "/bouquets", label: "Bouquets" },
   { href: "/order", label: "Order" },
   { href: "/contact", label: "Contact" },
 ];
@@ -17,6 +17,7 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden gap-6 sm:flex">
+          <ProductCategories />
           {links.map((link) => (
             <Link
               key={link.href}
@@ -42,6 +43,12 @@ export default function Navbar() {
 
       {/* mobile nav row */}
       <nav className="flex gap-4 overflow-x-auto border-t border-sand px-4 py-2 sm:hidden">
+        <Link
+          href="/bouquets"
+          className="whitespace-nowrap text-sm font-medium text-charcoal hover:text-rose"
+        >
+          Products
+        </Link>
         {links.map((link) => (
           <Link
             key={link.href}

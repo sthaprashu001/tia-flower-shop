@@ -10,6 +10,9 @@ const ProductSchema = new Schema(
     customizable: { type: Boolean, default: false },
     // simple cost tracking for the admin profit view (never sent to customers)
     cost: { type: Number, default: 0 },
+    // product category: "Bouquets", "Khata", "Flags", etc.
+    // defaults to "Bouquets" for backward compatibility with existing products
+    category: { type: String, default: "Bouquets" },
   },
   { timestamps: true }
 );
