@@ -1,4 +1,3 @@
-// Set NEXT_PUBLIC_SITE_URL once you buy a custom domain (see .env.example).
-// Falls back to the current Vercel URL so everything works correctly
-// either way, with no other code changes needed when you switch.
-export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tiaflowershop.vercel.app";
+// NEXT_PUBLIC_SITE_URL should be set in .env.local and Vercel environment.
+// Falls back to live domain as default (was vercel.app before custom domain purchase).
+export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tiaflowershop.online";

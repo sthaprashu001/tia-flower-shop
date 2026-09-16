@@ -84,15 +84,31 @@ Before handing this out to multiple people:
 - Sum `DELIVERED` orders by day/week for a simple revenue view
 - Never expose cost or profit numbers on any customer-facing page
 
-## Phase 6 — Payment, Nepali translation, polish
+## Phase 6 — SEO, social media, & local marketing
+
+**NOW LIVE.** The site has the foundation for local SEO and social growth:
+- Google Business Profile (claim yours at business.google.com)
+- Google Search Console verification (add verification code to env vars)
+- Schema.org LocalBusiness structured data (auto-generated with your address + coords)
+- Social media links in footer + schema.org `sameAs` tags
+
+**This phase requires no code changes** — just:
+1. Create Google Business account and verify
+2. Create Instagram, Facebook, TikTok accounts
+3. Post 3-4 times/week on Instagram, respond to comments
+4. Update environment variables with social URLs + Google verification code
+5. Monitor Google Search Console for errors
+
+See `docs/GOOGLE_AND_SEO_SETUP.md` for complete step-by-step walkthrough.
+
+## Phase 7 — Payment, Nepali translation, polish
 
 - eSewa/Khalti integration (optional — most Nepali flower/food businesses
   launch without this and add it later)
-- Nepali translation — the site copy is centralized enough (component
-  text, not scattered strings) that adding `next-intl` later is
-  straightforward
-- Real product photography, refined copy, analytics (Vercel Analytics or
-  Plausible)
+- Nepali translation — the site copy is centralized enough that adding
+  `next-intl` is straightforward once you're comfortable with the English
+  version's traction
+- Real product photography, refined copy, analytics (Vercel Analytics)
 
 ## A note on scope
 

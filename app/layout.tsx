@@ -30,17 +30,18 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "TIA Flower Shop | Bouquets near Tribhuvan International Airport",
+    default: "TIA Flower Shop | Fresh Bouquets near Tribhuvan International Airport",
     template: "%s | TIA Flower Shop",
   },
   description:
-    "Order fresh bouquets for arrivals and departures near TIA, Kathmandu. Choose your flowers online, we prepare and meet you at the airport.",
+    "Order fresh bouquets for arrivals and departures near TIA, Kathmandu. Choose online, we prepare fresh flowers and meet you at the airport.",
   keywords: [
     "flower shop near TIA",
-    "flowers Tribhuvan Airport",
-    "bouquet delivery Kathmandu",
-    "fresh flowers Kathmandu",
-    "airport flowers Nepal",
+    "flowers Tribhuvan Airport Kathmandu",
+    "bouquet delivery Kathmandu Nepal",
+    "fresh flowers near airport",
+    "flower delivery TIA",
+    "khata flags Kathmandu",
   ],
   openGraph: {
     title: "TIA Flower Shop | Fresh Bouquets Near the Airport",
@@ -55,7 +56,14 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
   },
+  ...(process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION } }
+    : {}),
 };
 
 export default function RootLayout({
@@ -70,19 +78,34 @@ export default function RootLayout({
     process.env.NEXT_PUBLIC_TIKTOK_URL,
   ].filter((url): url is string => Boolean(url));
 
+  const address = process.env.NEXT_PUBLIC_SHOP_ADDRESS || "Near Tribhuvan International Airport, Kathmandu, Nepal";
+  const latitude = process.env.NEXT_PUBLIC_SHOP_LATITUDE || "27.8176";
+  const longitude = process.env.NEXT_PUBLIC_SHOP_LONGITUDE || "85.9124";
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
+    "@id": siteUrl,
     name: "TIA Flower Shop",
     description:
-      "Fresh bouquet delivery near Tribhuvan International Airport, Kathmandu, Nepal.",
+      "Fresh bouquet delivery near Tribhuvan International Airport, Kathmandu, Nepal. Specializing in bouquets, khata, and flags.",
     url: siteUrl,
     image: `${siteUrl}/images/red-rose-black-cover.jpeg`,
     ...(whatsappNumber ? { telephone: `+${whatsappNumber}` } : {}),
-    // No fixed street address is on file yet — add NEXT_PUBLIC_SHOP_ADDRESS
-    // (or fill this in directly) once you have one to publish; an address
-    // meaningfully improves local search ranking.
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Kathmandu",
+      addressRegion: "Bagmati",
+      addressCountry: "NP",
+      streetAddress: address,
+    },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
+    },
     areaServed: { "@type": "City", name: "Kathmandu" },
+    priceRange: "Rs. 70 - Rs. 1000",
     ...(sameAs.length > 0 ? { sameAs } : {}),
   };
 

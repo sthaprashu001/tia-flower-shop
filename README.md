@@ -3,8 +3,8 @@
 A mobile-first bouquet ordering platform for customers welcoming or seeing
 off someone near Tribhuvan International Airport (TIA), Kathmandu, Nepal.
 
-**Status:** Phase 1 MVP scaffold — runs locally on mock data, no database
-required yet. See `docs/NEXT_STEPS.md` for the full roadmap.
+**Status:** Live at **https://tiaflowershop.online** — MongoDB + Vercel deployment, admin dashboard, featured products.
+See `docs/NEXT_STEPS.md` for the roadmap.
 
 ## Tech stack
 
@@ -75,12 +75,15 @@ else.
 1. Push this project to GitHub (see "Git & GitHub instructions" below).
 2. Go to https://vercel.com, sign in with GitHub, and import the
    `tia-flower-shop` repository.
-3. In the Vercel project settings, add the same environment variables
-   from your `.env.local` (Vercel → Settings → Environment Variables).
-4. Deploy. Vercel gives you a live URL (e.g.
-   `tia-flower-shop.vercel.app`) — you can add a custom domain later.
-5. Every time you push to the `main` branch, Vercel automatically
-   redeploys.
+3. In the Vercel project settings, add environment variables from `.env.local`
+   (Vercel → Settings → Environment Variables) — most importantly:
+   - `NEXT_PUBLIC_SITE_URL=https://tiaflowershop.online`
+   - `MONGODB_URI` (if using database)
+   - `NEXTAUTH_SECRET` (for admin login)
+   - Social media URLs (`NEXT_PUBLIC_INSTAGRAM_URL`, etc.)
+4. Add custom domain: Vercel → Settings → Domains → Add `tiaflowershop.online`
+   and update nameservers in your domain registrar (Nepal Cloud, etc.)
+5. Every time you push to the `main` branch, Vercel auto-redeploys.
 
 ## Git & GitHub instructions (review before pushing)
 
