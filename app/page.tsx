@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import BouquetCard from "@/components/BouquetCard";
+import AddToCartButton from "@/components/AddToCartButton";
 import ShopStatusBadge from "@/components/ShopStatusBadge";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getAllBouquets } from "@/lib/products";
@@ -14,71 +15,32 @@ const STEPS = [
   { title: "Meet & receive", body: "We hand it to you near TIA. Free, no delivery cost." },
 ];
 
-const COLLAGE_POSITIONS: Record<number, string[]> = {
-  1: ["left-1/2 top-0 -translate-x-1/2 z-20"],
-  2: [
-    "left-1/2 top-2 -translate-x-[75%] rotate-[-5deg] z-10",
-    "left-1/2 top-0 -translate-x-[25%] rotate-[5deg] z-20",
-  ],
-  3: [
-    "left-1/2 top-2 -translate-x-[80%] rotate-[-6deg] z-10",
-    "left-1/2 top-0 -translate-x-1/2 z-20",
-    "left-1/2 top-2 -translate-x-[20%] rotate-[6deg] z-10",
-  ],
-  4: [
-    "left-1/2 top-4 -translate-x-[85%] rotate-[-8deg] z-10",
-    "left-1/2 top-0 -translate-x-[50%] rotate-[-3deg] z-20",
-    "left-1/2 top-0 -translate-x-[10%] rotate-[3deg] z-20",
-    "left-1/2 top-4 -translate-x-[15%] rotate-[8deg] z-10",
-  ],
-  5: [
-    "left-1/2 top-6 -translate-x-[90%] rotate-[-10deg] z-10",
-    "left-1/2 top-2 -translate-x-[55%] rotate-[-4deg] z-15",
-    "left-1/2 top-0 -translate-x-1/2 z-20",
-    "left-1/2 top-2 -translate-x-[45%] rotate-[4deg] z-15",
-    "left-1/2 top-6 -translate-x-[10%] rotate-[10deg] z-10",
-  ],
-};
-
 export default async function HomePage() {
   const bouquets = await getAllBouquets();
-  const available = bouquets.filter((b) => b.available);
   
-  // Build a smart collage: show 3 bouquets + 1 from each other category
-  // This showcases the full product range (bouquets, khata, flags, etc.)
-  const collage = (() => {
-    if (available.length === 0) return [];
-    
-    // Separate bouquets from other categories
-    const bouquetItems = available.filter((b) => b.category === "Bouquets");
-    const otherCategoryItems = available.filter((b) => b.category !== "Bouquets");
-    
-    // Group other categories
-    const otherByCategory = new Map<string, typeof bouquets>();
-    for (const item of otherCategoryItems) {
-      const cat = item.category || "Bouquets";
-      if (!otherByCategory.has(cat)) {
-        otherByCategory.set(cat, []);
-      }
-      otherByCategory.get(cat)!.push(item);
-    }
-    
-    const result: typeof bouquets = [];
-    
-    // Add up to 3 bouquets (show diversity within bouquets)
-    result.push(...bouquetItems.slice(0, 3));
-    
-    // Add 1 representative from each other category
-    for (const [, items] of otherByCategory) {
-      result.push(items[0]);
-    }
-    
-    // Return up to 5 items (3 bouquets + 2 other categories max)
-    return result.slice(0, 5);
-  })();
+  // Get featured items sorted by featuredOrder
+  const featured = bouquets
+    .filter((b) => b.featured)
+    .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0));
+  
+  // Separate bouquets from other categories
+  const featuredBouquets = featured.filter((b) => b.category === "Bouquets");
+  const featuredOthers = featured.filter((b) => b.category !== "Bouquets");
+  
+  // Arrange with bouquets in middle (positions 2, 3, 4 out of 0-6)
+  // Layout: [Other1, Other2, Bouquet1, Bouquet2, Bouquet3, Other3, Other4]
+  const collage = [
+    featuredOthers[0],
+    featuredOthers[1],
+    featuredBouquets[0],
+    featuredBouquets[1],
+    featuredBouquets[2],
+    featuredOthers[2],
+    featuredOthers[3],
+  ].filter(Boolean); // Remove undefined items
   
   // For the "Today's items" section, show first 4 available items
-  const todayItems = available.slice(0, 4);
+  const todayItems = bouquets.filter((b) => b.available).slice(0, 4);
 
   return (
     <div>
@@ -108,27 +70,38 @@ export default async function HomePage() {
           </div>
 
           {collage.length > 0 && (
-            <div className={`relative mx-auto w-full max-w-xs lg:mx-0 lg:max-w-none ${
-              collage.length >= 4 ? "h-60 sm:h-80 lg:h-96" : "h-52 sm:h-64 lg:h-72"
-            }`}>
-              {collage.map((b, i) => {
-                const positions = COLLAGE_POSITIONS[collage.length];
-                return (
-                  <div
-                    key={b.id}
-                    className={`absolute h-40 w-32 overflow-hidden rounded-2xl shadow-lg shadow-charcoal/15 sm:h-52 sm:w-40 lg:h-60 lg:w-44 ${positions[i]}`}
-                  >
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {collage.map((item) => (
+                <div
+                  key={item.id}
+                  className="group overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md bg-white"
+                >
+                  <div className="relative h-40 w-full bg-sand/30">
                     <Image
-                      src={b.image}
-                      alt={`${b.name} — fresh bouquet delivery near TIA, Kathmandu`}
+                      src={item.image}
+                      alt={item.name}
                       fill
-                      sizes="176px"
-                      className="object-cover"
-                      priority={i === 1}
+                      className="object-cover transition-transform group-hover:scale-105"
+                      sizes="200px"
+                      priority
                     />
                   </div>
-                );
-              })}
+                  <div className="p-3">
+                    <p className="text-xs font-medium text-charcoal/60">
+                      {item.category || "Bouquets"}
+                    </p>
+                    <h3 className="line-clamp-2 text-sm font-semibold text-charcoal mt-1">
+                      {item.name}
+                    </h3>
+                    <p className="mt-2 text-sm font-semibold text-rose-dark">
+                      Rs. {item.price}
+                    </p>
+                    <div className="mt-3">
+                      <AddToCartButton bouquetId={item.id} available={item.available} variant="compact" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

@@ -9,6 +9,8 @@ export interface Bouquet {
   available: boolean;
   customizable: boolean;
   category: string; // "Bouquets", "Khata", "Flags", etc.
+  featured?: boolean; // appears on homepage
+  featuredOrder?: number; // display order (1-7)
 }
 
 export interface OrderItem {

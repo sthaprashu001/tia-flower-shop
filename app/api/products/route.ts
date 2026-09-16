@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, price, description, image, available, customizable, cost, category } = body;
+  const { name, price, description, image, available, customizable, cost, category, featured, featuredOrder } = body;
 
   if (!name?.trim()) return NextResponse.json({ error: "Name is required." }, { status: 400 });
   if (typeof price !== "number" || price <= 0) {
@@ -66,6 +66,8 @@ export async function POST(req: NextRequest) {
       customizable: customizable ?? false,
       cost: cost ?? 0,
       category: category?.trim() || "Bouquets",
+      featured: featured ?? false,
+      featuredOrder: featuredOrder ?? 0,
     });
     return NextResponse.json({ product }, { status: 201 });
   } catch (err) {

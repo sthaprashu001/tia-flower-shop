@@ -13,6 +13,10 @@ const ProductSchema = new Schema(
     // product category: "Bouquets", "Khata", "Flags", etc.
     // defaults to "Bouquets" for backward compatibility with existing products
     category: { type: String, default: "Bouquets" },
+    // Featured on homepage
+    featured: { type: Boolean, default: false },
+    // Display order on homepage (1-7)
+    featuredOrder: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

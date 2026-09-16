@@ -28,6 +28,8 @@ interface AdminProduct {
   customizable: boolean;
   cost?: number;
   category?: string;
+  featured?: boolean;
+  featuredOrder?: number;
 }
 
 const emptyForm = {
@@ -39,6 +41,8 @@ const emptyForm = {
   customizable: false,
   cost: "",
   category: "Bouquets",
+  featured: false,
+  featuredOrder: 0,
 };
 
 export default function AdminProductsPage() {
@@ -100,6 +104,8 @@ export default function AdminProductsPage() {
       customizable: p.customizable,
       cost: p.cost ? String(p.cost) : "",
       category: p.category || "Bouquets",
+      featured: p.featured ?? false,
+      featuredOrder: p.featuredOrder ?? 0,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -151,6 +157,8 @@ export default function AdminProductsPage() {
       customizable: form.customizable,
       cost: form.cost ? Number(form.cost) : 0,
       category: form.category.trim() || "Bouquets",
+      featured: form.featured,
+      featuredOrder: form.featuredOrder,
     };
 
     try {
@@ -314,7 +322,30 @@ export default function AdminProductsPage() {
             />
           </div>
 
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+              Featured Order (1-7, for homepage)
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={7}
+              value={form.featuredOrder}
+              onChange={(e) => setForm((f) => ({ ...f, featuredOrder: parseInt(e.target.value) || 0 }))}
+              className="mt-1 w-full rounded-md border border-sand px-3 py-2"
+              placeholder="0 = not featured"
+            />
+          </div>
+
           <div className="flex items-center gap-4 pt-6">
+            <label className="flex items-center gap-2 text-sm text-charcoal">
+              <input
+                type="checkbox"
+                checked={form.featured}
+                onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked }))}
+              />
+              Show on homepage
+            </label>
             <label className="flex items-center gap-2 text-sm text-charcoal">
               <input
                 type="checkbox"
@@ -444,10 +475,15 @@ export default function AdminProductsPage() {
               <div className="flex-1">
                 <p className="font-semibold text-charcoal">{p.name}</p>
                 <p className="text-sm text-charcoal/60">Rs. {p.price.toLocaleString("en-IN")}</p>
-                <div className="mt-1 flex gap-2">
+                <div className="mt-1 flex gap-2 items-center">
                   <span className="inline-block rounded-full bg-sage-light px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-sage-dark">
                     {p.category || "Bouquets"}
                   </span>
+                  {p.featured && (
+                    <span className="inline-block rounded-full bg-rose/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-rose-dark">
+                      Featured {p.featuredOrder && `(#${p.featuredOrder})`}
+                    </span>
+                  )}
                 </div>
                 <p className="mt-1 text-xs text-charcoal/50">
                   {p.available ? "Available" : "Unavailable"}

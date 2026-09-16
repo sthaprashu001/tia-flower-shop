@@ -17,7 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const body = await req.json();
   const updates: Record<string, unknown> = {};
-  for (const field of ["name", "price", "description", "image", "available", "customizable", "cost", "category"]) {
+  for (const field of ["name", "price", "description", "image", "available", "customizable", "cost", "category", "featured", "featuredOrder"]) {
     if (field in body) updates[field] = body[field];
   }
 

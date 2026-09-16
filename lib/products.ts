@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { Bouquet } from "./types";
-import { bouquets as mockBouquets, getBouquetById as getMockBouquetById } from "./data";
+import { allProducts as mockBouquets, getBouquetById as getMockBouquetById } from "./data";
 import { isDatabaseConfigured, connectToDatabase } from "./mongodb";
 import Product from "@/models/Product";
 

@@ -80,8 +80,84 @@ export const bouquets: Bouquet[] = [
   },
 ];
 
+// Mock Khata products
+export const khataProducts: Bouquet[] = [
+  {
+    id: "khata-multicolor",
+    name: "Multicolor Khata",
+    price: 150,
+    description:
+      "Traditional multicolor khata with auspicious symbols. Perfect for blessings and ceremonies.",
+    image: "/images/khata-multicolor.svg",
+    available: true,
+    customizable: false,
+    category: "Khata",
+  },
+  {
+    id: "khata-red-gold",
+    name: "Red & Gold Khata",
+    price: 200,
+    description:
+      "Premium red and gold khata with traditional patterns. Ideal for special occasions and spiritual practices.",
+    image: "/images/khata-red-gold.svg",
+    available: true,
+    customizable: false,
+    category: "Khata",
+  },
+  {
+    id: "khata-white",
+    name: "White Khata",
+    price: 120,
+    description:
+      "Pure white khata symbolizing peace and purity. Commonly used for blessings and offerings.",
+    image: "/images/khata-white.svg",
+    available: true,
+    customizable: false,
+    category: "Khata",
+  },
+];
+
+// Mock Flag products
+export const flagProducts: Bouquet[] = [
+  {
+    id: "flag-4ft",
+    name: "4ft Prayer Flag Set",
+    price: 400,
+    description:
+      "Traditional 4ft prayer flag with auspicious symbols. Brings blessings and positive energy.",
+    image: "/images/flag-4ft.svg",
+    available: true,
+    customizable: false,
+    category: "Flag",
+  },
+  {
+    id: "flag-5ft",
+    name: "5ft Prayer Flag Set",
+    price: 600,
+    description:
+      "Premium 5ft prayer flag set with vibrant colors and intricate designs. Perfect for homes and temples.",
+    image: "/images/flag-5ft.svg",
+    available: true,
+    customizable: false,
+    category: "Flag",
+  },
+  {
+    id: "flag-tibetan",
+    name: "Tibetan Prayer Flag Bundle",
+    price: 500,
+    description:
+      "Authentic Tibetan prayer flags with traditional mantras. Set of 5 flags for sustained blessings.",
+    image: "/images/flag-tibetan.svg",
+    available: true,
+    customizable: false,
+    category: "Flag",
+  },
+];
+
+export const allProducts: Bouquet[] = [...bouquets, ...khataProducts, ...flagProducts];
+
 export function getBouquetById(id: string): Bouquet | undefined {
-  return bouquets.find((b) => b.id === id);
+  return allProducts.find((b) => b.id === id);
 }
 
 /**
