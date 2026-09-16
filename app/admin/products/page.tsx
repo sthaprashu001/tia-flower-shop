@@ -55,6 +55,10 @@ export default function AdminProductsPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  
+  // Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
 
   useEffect(() => {
     // Middleware already blocks unauthenticated requests to this route,
@@ -169,7 +173,7 @@ export default function AdminProductsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this bouquet? This can't be undone.")) return;
+    if (!confirm("Delete this product? This can't be undone.")) return;
 
     const res = await fetch(`/api/products/${id}`, {
       method: "DELETE",
@@ -186,7 +190,10 @@ export default function AdminProductsPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-display text-2xl italic text-charcoal sm:text-3xl">Manage bouquets</h1>
+        <div>
+          <h1 className="font-display text-2xl italic text-charcoal sm:text-3xl">Manage products</h1>
+          <p className="mt-1 text-sm text-charcoal/70">Add and manage bouquets, khata, flags, and more.</p>
+        </div>
         <button
           onClick={() => router.push("/admin/dashboard")}
           className="self-start text-sm text-charcoal/60 hover:text-rose-dark"
@@ -200,7 +207,7 @@ export default function AdminProductsPage() {
           <strong>Database not connected.</strong> The catalog below is
           read-only mock data from <code>lib/data.ts</code>. Set{" "}
           <code>MONGODB_URI</code> in your environment variables to add,
-          edit, or delete bouquets from here.
+          edit, or delete products from here.
         </div>
       )}
 
@@ -210,7 +217,7 @@ export default function AdminProductsPage() {
         className="mt-6 rounded-card border border-sand bg-white p-6"
       >
         <h2 className="font-display text-xl italic text-charcoal">
-          {editingId ? "Edit bouquet" : "Add a new bouquet"}
+          {editingId ? "Edit product" : "Add a new product"}
         </h2>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -335,7 +342,7 @@ export default function AdminProductsPage() {
             disabled={saving || uploading || dbNotConnected}
             className="rounded-full bg-charcoal px-6 py-2.5 text-sm font-semibold text-ivory hover:bg-charcoal/80 disabled:opacity-60"
           >
-            {saving ? "Saving…" : editingId ? "Save changes" : "Add bouquet"}
+            {saving ? "Saving…" : editingId ? "Save changes" : "Add product"}
           </button>
           {editingId && (
             <button
@@ -351,13 +358,77 @@ export default function AdminProductsPage() {
 
       {/* Existing products */}
       <div className="mt-8">
-        <h2 className="font-display text-xl italic text-charcoal">Current catalog</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-xl italic text-charcoal">Current catalog</h2>
+          {!loading && !error && (
+            <div className="text-sm text-charcoal/70">
+              <span className="font-semibold text-charcoal">{products.length}</span> total product{products.length !== 1 ? "s" : ""}
+            </div>
+          )}
+        </div>
 
         {loading && <p className="mt-4 text-sm text-charcoal/60">Loading…</p>}
         {error && <p className="mt-4 text-sm text-rose-dark">{error}</p>}
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {products.map((p) => (
+        {!loading && !error && products.length > 0 && (
+          <>
+            {/* Category breakdown */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              {categories.map((cat) => {
+                const count = products.filter((p) => (p.category || "Bouquets") === cat).length;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setFilterCategory(filterCategory === cat ? "" : cat)}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                      filterCategory === cat
+                        ? "bg-charcoal text-ivory"
+                        : "bg-sand/50 text-charcoal hover:bg-sand"
+                    }`}
+                  >
+                    {cat} <span className="ml-1 opacity-75">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search */}
+            <div className="mt-4">
+              <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+                Search products
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Red Rose, Khata, Flag"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="mt-1 w-full rounded-md border border-sand px-3 py-2"
+              />
+            </div>
+          </>
+        )}
+
+        {(() => {
+          const filtered = products.filter((p) => {
+            const matchesSearch =
+              searchQuery === "" ||
+              p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              (p.description?.toLowerCase() || "").includes(searchQuery.toLowerCase());
+            const matchesCategory = filterCategory === "" || p.category === filterCategory;
+            return matchesSearch && matchesCategory;
+          });
+
+          if (filtered.length === 0 && !loading && products.length > 0) {
+            return (
+              <div className="mt-6 rounded-card border border-sand/50 bg-sand/10 p-6 text-center">
+                <p className="text-sm text-charcoal/60">No products match your filter.</p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {filtered.map((p) => (
             <div
               key={p._id}
               className="flex gap-3 rounded-card border border-sand bg-white p-4"
@@ -394,8 +465,10 @@ export default function AdminProductsPage() {
                 )}
               </div>
             </div>
-          ))}
-        </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
