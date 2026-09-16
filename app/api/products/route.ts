@@ -14,17 +14,21 @@ export async function GET() {
 
   try {
     await connectToDatabase();
-    const rawProducts = await Product.find().sort({ createdAt: -1 }).lean();
-    // MongoDB documents come back with `_id`, but most of the app (order
-    // form, homepage, bouquet cards) expects a plain `id` field like the
-    // mock catalog uses. Add both so the admin panel (which reads `_id`)
-    // and everything else (which reads `id`) work without extra changes.
-    const products = rawProducts.map((p) => ({ 
-      ...p, 
-      id: String(p._id), 
+    const rawProducts = await Product.find().lean();
+    // Normalize all products to have consistent structure
+    const products = rawProducts.map((p) => ({
+      id: String(p._id),
       _id: String(p._id),
-      featured: p.featured === true, // ensure boolean
-      featuredOrder: Number(p.featuredOrder) || 0, // ensure number
+      name: p.name || "",
+      price: p.price || 0,
+      description: p.description || "",
+      image: p.image || "",
+      available: p.available !== false,
+      customizable: p.customizable === true,
+      cost: p.cost || 0,
+      category: p.category || "Bouquets",
+      featured: p.featured === true, // Explicitly convert to boolean
+      featuredOrder: Number(p.featuredOrder) || 0,
     }));
     return NextResponse.json({ source: "database", products });
   } catch (err) {

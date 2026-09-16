@@ -18,10 +18,14 @@ const STEPS = [
 export default async function HomePage() {
   const bouquets = await getAllBouquets();
   
-  // Get featured items sorted by featuredOrder
+  // Get featured items - filter for products with featured flag set to true
   const featured = bouquets
-    .filter((b) => b.featured && b.featured === true)
+    .filter((b) => b.featured === true)
     .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0));
+  
+  console.log("DEBUG: Total bouquets:", bouquets.length);
+  console.log("DEBUG: Featured bouquets:", featured.length);
+  console.log("DEBUG: Featured items:", featured.map(b => ({ name: b.name, featured: b.featured, order: b.featuredOrder })));
   
   // Separate bouquets from other categories
   const featuredBouquets = featured.filter((b) => b.category === "Bouquets");

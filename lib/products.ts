@@ -23,6 +23,8 @@ interface ProductDoc {
   available: boolean;
   customizable: boolean;
   category?: string;
+  featured?: boolean;
+  featuredOrder?: number;
 }
 
 function serialize(doc: ProductDoc): Bouquet {
@@ -35,6 +37,8 @@ function serialize(doc: ProductDoc): Bouquet {
     available: doc.available,
     customizable: doc.customizable,
     category: doc.category || "Bouquets", // default to "Bouquets" for backward compatibility
+    featured: doc.featured === true,
+    featuredOrder: doc.featuredOrder || 0,
   };
 }
 
