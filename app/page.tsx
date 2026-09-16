@@ -25,48 +25,59 @@ const COLLAGE_POSITIONS: Record<number, string[]> = {
     "left-1/2 top-0 -translate-x-1/2 z-20",
     "left-1/2 top-2 -translate-x-[20%] rotate-[6deg] z-10",
   ],
+  4: [
+    "left-1/2 top-4 -translate-x-[85%] rotate-[-8deg] z-10",
+    "left-1/2 top-0 -translate-x-[50%] rotate-[-3deg] z-20",
+    "left-1/2 top-0 -translate-x-[10%] rotate-[3deg] z-20",
+    "left-1/2 top-4 -translate-x-[15%] rotate-[8deg] z-10",
+  ],
+  5: [
+    "left-1/2 top-6 -translate-x-[90%] rotate-[-10deg] z-10",
+    "left-1/2 top-2 -translate-x-[55%] rotate-[-4deg] z-15",
+    "left-1/2 top-0 -translate-x-1/2 z-20",
+    "left-1/2 top-2 -translate-x-[45%] rotate-[4deg] z-15",
+    "left-1/2 top-6 -translate-x-[10%] rotate-[10deg] z-10",
+  ],
 };
 
 export default async function HomePage() {
   const bouquets = await getAllBouquets();
   const available = bouquets.filter((b) => b.available);
   
-  // Build a smart collage: one item per category (up to 3 items)
-  // If we have fewer categories, fill with remaining items
+  // Build a smart collage: show 3 bouquets + 1 from each other category
+  // This showcases the full product range (bouquets, khata, flags, etc.)
   const collage = (() => {
     if (available.length === 0) return [];
     
-    // Group available items by category
-    const byCategory = new Map<string, typeof bouquets>();
-    for (const item of available) {
+    // Separate bouquets from other categories
+    const bouquetItems = available.filter((b) => b.category === "Bouquets");
+    const otherCategoryItems = available.filter((b) => b.category !== "Bouquets");
+    
+    // Group other categories
+    const otherByCategory = new Map<string, typeof bouquets>();
+    for (const item of otherCategoryItems) {
       const cat = item.category || "Bouquets";
-      if (!byCategory.has(cat)) {
-        byCategory.set(cat, []);
+      if (!otherByCategory.has(cat)) {
+        otherByCategory.set(cat, []);
       }
-      byCategory.get(cat)!.push(item);
+      otherByCategory.get(cat)!.push(item);
     }
     
-    // Take one item from each category, up to 3 categories
     const result: typeof bouquets = [];
-    for (const [, items] of byCategory) {
-      if (result.length >= 3) break;
+    
+    // Add up to 3 bouquets (show diversity within bouquets)
+    result.push(...bouquetItems.slice(0, 3));
+    
+    // Add 1 representative from each other category
+    for (const [, items] of otherByCategory) {
       result.push(items[0]);
     }
     
-    // If we have fewer than 3, add more items from the beginning
-    if (result.length < 3) {
-      for (const item of available) {
-        if (result.length >= 3) break;
-        if (!result.includes(item)) {
-          result.push(item);
-        }
-      }
-    }
-    
-    return result;
+    // Return up to 5 items (3 bouquets + 2 other categories max)
+    return result.slice(0, 5);
   })();
   
-  // For the "Today's bouquets" section, show first 4 available items
+  // For the "Today's items" section, show first 4 available items
   const todayItems = available.slice(0, 4);
 
   return (
@@ -97,7 +108,9 @@ export default async function HomePage() {
           </div>
 
           {collage.length > 0 && (
-            <div className="relative mx-auto h-52 w-full max-w-xs sm:h-64 lg:mx-0 lg:h-72 lg:max-w-none">
+            <div className={`relative mx-auto w-full max-w-xs lg:mx-0 lg:max-w-none ${
+              collage.length >= 4 ? "h-60 sm:h-80 lg:h-96" : "h-52 sm:h-64 lg:h-72"
+            }`}>
               {collage.map((b, i) => {
                 const positions = COLLAGE_POSITIONS[collage.length];
                 return (
