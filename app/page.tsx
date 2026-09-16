@@ -82,38 +82,53 @@ export default async function HomePage() {
           </div>
 
           {collage.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {collage.map((item) => (
-                <div
-                  key={item.id}
-                  className="group overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md bg-white"
-                >
-                  <div className="relative h-40 w-full bg-sand/30">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      className="object-cover transition-transform group-hover:scale-105"
-                      sizes="200px"
-                      priority
-                    />
-                  </div>
-                  <div className="p-3">
-                    <p className="text-xs font-medium text-charcoal/60">
-                      {item.category || "Bouquets"}
-                    </p>
-                    <h3 className="line-clamp-2 text-sm font-semibold text-charcoal mt-1">
-                      {item.name}
-                    </h3>
-                    <p className="mt-2 text-sm font-semibold text-rose-dark">
-                      Rs. {item.price}
-                    </p>
-                    <div className="mt-3">
-                      <AddToCartButton bouquetId={item.id} available={item.available} variant="compact" />
+            <div className="relative mx-auto w-full max-w-xs lg:mx-0 lg:max-w-none h-60 sm:h-80 lg:h-96">
+              {collage.map((item, idx) => {
+                const positions = [
+                  "left-0 top-10 -rotate-6 z-10",
+                  "left-1/4 top-0 rotate-3 z-20",
+                  "left-1/2 top-8 z-30",
+                  "right-1/4 top-0 -rotate-3 z-20",
+                  "right-0 top-10 rotate-6 z-10",
+                ];
+                return (
+                  <div
+                    key={item.id}
+                    className={`absolute h-40 w-32 overflow-hidden rounded-lg shadow-lg transition-all hover:shadow-xl hover:z-50 sm:h-48 sm:w-40 lg:h-56 lg:w-44 ${positions[idx] || positions[0]}`}
+                  >
+                    <div className="h-full w-full bg-white flex flex-col">
+                      <div className="relative h-32 w-full bg-sand/30 sm:h-40 lg:h-44">
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          className="object-cover"
+                          sizes="176px"
+                          priority={idx < 2}
+                        />
+                      </div>
+                      <div className="flex-1 p-2 flex flex-col justify-between">
+                        <div>
+                          <p className="text-[10px] font-medium text-charcoal/60">
+                            {item.category || "Bouquets"}
+                          </p>
+                          <h3 className="line-clamp-1 text-xs font-semibold text-charcoal">
+                            {item.name}
+                          </h3>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-rose-dark mb-1">
+                            Rs. {item.price}
+                          </p>
+                          <button className="w-full bg-rose text-white text-[10px] py-1 rounded-full hover:bg-rose-dark transition">
+                            Add
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="mt-8 rounded-lg border border-sand/30 bg-sand/10 p-8 text-center">
