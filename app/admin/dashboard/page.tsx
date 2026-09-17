@@ -208,6 +208,12 @@ export default function AdminDashboardPage() {
             <span className="min-w-0 truncate text-sm text-charcoal/50">{authSession.user.email}</span>
           )}
           <button
+            onClick={() => router.push("/admin/orders")}
+            className="whitespace-nowrap text-sm font-semibold text-rose-dark hover:underline"
+          >
+            Manage orders →
+          </button>
+          <button
             onClick={() => router.push("/admin/products")}
             className="whitespace-nowrap text-sm font-semibold text-rose-dark hover:underline"
           >

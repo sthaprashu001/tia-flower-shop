@@ -7,6 +7,61 @@ import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import { Order as OrderType, OrderInput } from "@/lib/types";
 
+// Send email notification when order is placed
+async function sendOrderNotification(order: OrderType) {
+  try {
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.NEXT_AUTH_EMAIL_FROM || "orders@tiaflowershop.online";
+    
+    const emailBody = `
+New Order Received! 🌹
+
+Order Number: ${order.orderNumber}
+Customer: ${order.customerName}
+Phone: ${order.phone}
+Total: Rs. ${order.total}
+
+Pickup Date: ${order.date}
+Pickup Time: ${order.time}
+Location: ${order.meetingLocation}
+
+Urgent: ${order.urgent ? "YES 🚨" : "No"}
+
+Items:
+${order.items.map((i) => `- Bouquet ID: ${i.bouquetId}, Qty: ${i.quantity}`).join("\n")}
+
+Customization: ${order.customizationNote || "None"}
+Message: ${order.personalMessage || "None"}
+
+Status: PENDING
+
+---
+View and manage this order:
+https://tiaflowershop.online/admin/orders
+    `;
+
+    // Uncomment below if using Resend or another email service
+    // await fetch("https://api.resend.com/emails", {
+    //   method: "POST",
+    //   headers: {
+    //     "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({
+    //     from: "orders@tiaflowershop.online",
+    //     to: adminEmail,
+    //     subject: `New Order: ${order.orderNumber}`,
+    //     text: emailBody,
+    //   }),
+    // });
+
+    console.log(`📧 Order notification for ${order.orderNumber} ready to send to ${adminEmail}`);
+    console.log(emailBody);
+  } catch (error) {
+    console.error("Failed to send order notification:", error);
+    // Don't fail the order if email fails
+  }
+}
+
 /**
  * PHASE 1 fallback storage.
  * Without MONGODB_URI set, orders are kept in memory so you can test
@@ -130,6 +185,9 @@ export async function POST(req: NextRequest) {
   } else {
     mockOrders.unshift(orderDoc);
   }
+
+  // Send notification to admin
+  await sendOrderNotification(orderDoc);
 
   return NextResponse.json({ order: orderDoc }, { status: 201 });
 }
