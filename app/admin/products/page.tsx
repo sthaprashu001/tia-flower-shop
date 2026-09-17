@@ -324,7 +324,7 @@ export default function AdminProductsPage() {
 
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
-              Featured Order (1-7, for homepage)
+              Featured Order (Bouquets: 1-4, Khata: 5-6, Flag: 7)
             </label>
             <input
               type="number"
@@ -333,8 +333,11 @@ export default function AdminProductsPage() {
               value={form.featuredOrder}
               onChange={(e) => setForm((f) => ({ ...f, featuredOrder: parseInt(e.target.value) || 0 }))}
               className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-              placeholder="0 = not featured"
+              placeholder="0 = not featured (khata/flag auto-show first)"
             />
+            <p className="mt-1 text-xs text-charcoal/50">
+              • Bouquets (1-4): You choose which appear. • Khata (5-6) & Flag (7): Always show (first if you don't select).
+            </p>
           </div>
 
           <div className="flex items-center gap-4 pt-6">

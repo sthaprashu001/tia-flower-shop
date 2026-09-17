@@ -18,30 +18,42 @@ const STEPS = [
 export default async function HomePage() {
   const bouquets = await getAllBouquets();
   
-  // Get featured items - filter for products with featured flag set to true
-  const featured = bouquets
-    .filter((b) => b.featured === true)
-    .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0));
+  // Get featured bouquets only (up to 4) - admin selects these
+  const featuredBouquets = bouquets
+    .filter((b) => b.featured === true && b.category === "Bouquets")
+    .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0))
+    .slice(0, 4);
   
-  console.log("DEBUG: Total bouquets:", bouquets.length);
-  console.log("DEBUG: Featured bouquets:", featured.length);
-  console.log("DEBUG: Featured items:", featured.map(b => ({ name: b.name, featured: b.featured, order: b.featuredOrder })));
+  // Get featured khata (up to 2) - if none featured, show first 2 available
+  let featuredKhata = bouquets
+    .filter((b) => b.featured === true && b.category === "Khata")
+    .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0))
+    .slice(0, 2);
   
-  // Separate bouquets from other categories
-  const featuredBouquets = featured.filter((b) => b.category === "Bouquets");
-  const featuredOthers = featured.filter((b) => b.category !== "Bouquets");
+  if (featuredKhata.length === 0) {
+    featuredKhata = bouquets.filter((b) => b.category === "Khata").slice(0, 2);
+  }
   
-  // Arrange with bouquets in middle (positions 2, 3, 4 out of 0-6)
-  // Layout: [Other1, Other2, Bouquet1, Bouquet2, Bouquet3, Other3, Other4]
+  // Get featured flag (1 item) - if none featured, show first available
+  let featuredFlag = bouquets
+    .filter((b) => b.featured === true && b.category === "Flags")
+    .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0))
+    .slice(0, 1);
+  
+  if (featuredFlag.length === 0) {
+    featuredFlag = bouquets.filter((b) => b.category === "Flags").slice(0, 1);
+  }
+  
+  // Build collage: 2 khata + 4 bouquets + 1 flag = 7 items
   const collage = [
-    featuredOthers[0],
-    featuredOthers[1],
+    featuredKhata[0],
+    featuredKhata[1],
     featuredBouquets[0],
     featuredBouquets[1],
     featuredBouquets[2],
-    featuredOthers[2],
-    featuredOthers[3],
-  ].filter(Boolean); // Remove undefined items
+    featuredBouquets[3],
+    featuredFlag[0],
+  ].filter(Boolean);
   
   // For "Today's items": sort by category (bouquets first), then take first 4
   const available = bouquets.filter((b) => b.available);
@@ -82,40 +94,63 @@ export default async function HomePage() {
           </div>
 
           {collage.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {collage.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/bouquets/${item.id}`}
-                  className="group overflow-hidden rounded-lg"
-                >
-                  <div className="relative h-48 w-full bg-sand/30">
+            <div className="relative mx-auto w-full max-w-sm lg:max-w-none h-64 sm:h-80 lg:h-96">
+              {collage.map((item, idx) => {
+                // Positions for overlapping tossed card effect
+                const mobilePositions = [
+                  "left-2 top-0 -rotate-12 z-10",
+                  "left-12 top-2 rotate-6 z-20",
+                  "left-1/2 top-4 -translate-x-1/2 -rotate-2 z-30",
+                  "right-12 top-2 -rotate-6 z-20",
+                  "right-2 top-0 rotate-12 z-10",
+                  "left-1/4 bottom-4 rotate-3 z-15",
+                  "right-1/4 bottom-4 -rotate-3 z-15",
+                ];
+                
+                const desktopPositions = [
+                  "left-0 top-8 -rotate-6 z-10",
+                  "left-1/4 top-2 rotate-3 z-20",
+                  "left-1/2 top-0 -translate-x-1/2 z-30",
+                  "right-1/4 top-2 -rotate-3 z-20",
+                  "right-0 top-8 rotate-6 z-10",
+                  "left-1/3 bottom-0 rotate-2 z-15",
+                  "right-1/3 bottom-0 -rotate-2 z-15",
+                ];
+                
+                const position = mobilePositions[idx] || mobilePositions[0];
+                
+                return (
+                  <Link
+                    key={item.id}
+                    href={`/bouquets/${item.id}`}
+                    className={`absolute overflow-hidden rounded-lg shadow-md transition-all hover:shadow-xl hover:scale-105 h-40 w-32 sm:h-48 sm:w-40 lg:h-56 lg:w-44 ${position}`}
+                  >
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
-                      className="object-cover transition-transform group-hover:scale-110"
-                      sizes="200px"
-                      priority
+                      className="object-cover"
+                      sizes="176px"
+                      priority={idx < 3}
                     />
-                    {/* Dark overlay on hover with category + name only */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end p-3">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <p className="text-[10px] font-medium text-white/70 uppercase tracking-wide">
+                    {/* Dark overlay on hover with category + name */}
+                    <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-end p-2">
+                      <div className="opacity-0 hover:opacity-100 transition-opacity">
+                        <p className="text-[10px] font-medium text-white/70 uppercase">
                           {item.category || "Bouquets"}
                         </p>
-                        <p className="text-xs font-semibold text-white line-clamp-2 mt-1">
+                        <p className="text-xs font-semibold text-white line-clamp-2">
                           {item.name}
                         </p>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <div className="mt-8 rounded-lg border border-sand/30 bg-sand/10 p-8 text-center">
-              <p className="text-sm text-charcoal/60">Featured products coming soon. Mark products as featured in admin panel.</p>
+              <p className="text-sm text-charcoal/60">Featured products loading...</p>
             </div>
           )}
         </div>
