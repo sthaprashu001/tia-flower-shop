@@ -15,12 +15,12 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <Link href="/" className="transition hover:opacity-80">
           <Image
-            src="/logo/tia-logo.svg"
+            src="/logo/tia-logo.jpeg"
             alt="TIA Flower Shop"
-            width={40}
-            height={40}
+            width={50}
+            height={50}
             priority
-            className="h-10 w-auto"
+            className="h-12 w-auto rounded-lg"
           />
         </Link>
 
