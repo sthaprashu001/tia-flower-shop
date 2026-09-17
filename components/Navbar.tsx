@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import ShopStatusBadge from "./ShopStatusBadge";
 import CartIcon from "./CartIcon";
 import ProductCategories from "./ProductCategories";
@@ -12,8 +13,15 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-sand bg-ivory/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="font-display text-xl italic text-rose-dark">
-          TIA Flower Shop
+        <Link href="/" className="transition hover:opacity-80">
+          <Image
+            src="/logo/tia-logo.svg"
+            alt="TIA Flower Shop"
+            width={40}
+            height={40}
+            priority
+            className="h-10 w-auto"
+          />
         </Link>
 
         <nav className="hidden gap-6 sm:flex">

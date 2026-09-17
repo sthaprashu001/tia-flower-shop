@@ -43,6 +43,11 @@ export const metadata: Metadata = {
     "flower delivery TIA",
     "khata flags Kathmandu",
   ],
+  icons: {
+    icon: "/logo/tia-logo.svg",
+    shortcut: "/logo/tia-logo.svg",
+    apple: "/logo/tia-logo.svg",
+  },
   openGraph: {
     title: "TIA Flower Shop | Fresh Bouquets Near the Airport",
     description:
@@ -51,7 +56,10 @@ export const metadata: Metadata = {
     siteName: "TIA Flower Shop",
     type: "website",
     locale: "en_NP",
-    images: [{ url: "/images/red-rose-black-cover.jpeg", width: 1200, height: 900 }],
+    images: [
+      { url: "/logo/tia-logo.svg", width: 896, height: 1195, alt: "TIA Flower Shop Logo" },
+      { url: "/images/red-rose-black-cover.jpeg", width: 1200, height: 900 },
+    ],
   },
   robots: {
     index: true,
@@ -90,6 +98,7 @@ export default function RootLayout({
     description:
       "Fresh bouquet delivery near Tribhuvan International Airport, Kathmandu, Nepal. Specializing in bouquets, khata, and flags.",
     url: siteUrl,
+    logo: `${siteUrl}/logo/tia-logo.svg`,
     image: `${siteUrl}/images/red-rose-black-cover.jpeg`,
     ...(whatsappNumber ? { telephone: `+${whatsappNumber}` } : {}),
     address: {
