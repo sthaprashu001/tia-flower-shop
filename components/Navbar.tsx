@@ -6,6 +6,7 @@ import ProductCategories from "./ProductCategories";
 
 const links = [
   { href: "/order", label: "Order" },
+  { href: "/order-status", label: "Track Order" },
   { href: "/contact", label: "Contact" },
 ];
 

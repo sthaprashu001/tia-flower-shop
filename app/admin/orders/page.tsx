@@ -81,17 +81,25 @@ export default function AdminOrdersPage() {
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-display text-3xl italic text-charcoal">Orders</h1>
+          <h1 className="font-display text-3xl italic text-charcoal">Active Orders</h1>
           <p className="mt-2 text-sm text-charcoal/70">
             {pendingCount} pending • {readyCount} ready for pickup
           </p>
         </div>
-        <button
-          onClick={() => router.push("/admin/dashboard")}
-          className="text-sm text-charcoal/60 hover:text-rose-dark"
-        >
-          ← Back to dashboard
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => router.push("/admin/completed-orders")}
+            className="text-sm text-charcoal/60 hover:text-rose-dark"
+          >
+            View completed →
+          </button>
+          <button
+            onClick={() => router.push("/admin/dashboard")}
+            className="text-sm text-charcoal/60 hover:text-rose-dark"
+          >
+            ← Back to dashboard
+          </button>
+        </div>
       </div>
 
       {/* Status Filter */}

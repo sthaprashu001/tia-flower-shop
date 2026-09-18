@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getBouquetById } from "@/lib/products";
 import { getShopSettings } from "@/lib/shopSettings";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
+import { sendWhatsAppNotificationToAdmins } from "@/lib/whatsapp";
 import Order from "@/models/Order";
 import { Order as OrderType, OrderInput } from "@/lib/types";
 
@@ -192,18 +193,53 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ order: orderDoc }, { status: 201 });
 }
 
-// GET /api/orders — used by the admin dashboard. Requires a real
-// logged-in admin session (Phase 3) — replaces the old shared key.
-export async function GET() {
+// GET /api/orders — used by admin dashboard (shows active orders) or customers (with phone filter)
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const phone = searchParams.get("phone");
+  const status = searchParams.get("status");
+
+  // If phone provided, it's a customer checking their order (no auth required)
+  if (phone) {
+    if (isDatabaseConfigured()) {
+      try {
+        await connectToDatabase();
+        const orders = await Order.find({ phone: phone.trim() }).sort({ createdAt: -1 }).lean();
+        return NextResponse.json({ 
+          source: "database", 
+          orders: orders.map((o) => ({ ...o, id: String(o._id), _id: String(o._id) }))
+        });
+      } catch (err) {
+        console.error("Failed to load orders:", err);
+        return NextResponse.json({ error: "Could not fetch orders" }, { status: 500 });
+      }
+    }
+
+    // Mock mode
+    const customerOrders = mockOrders.filter(o => o.phone === phone.trim());
+    return NextResponse.json({ source: "mock", orders: customerOrders });
+  }
+
+  // Admin endpoint - requires authentication
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // If status filter provided (e.g., "COMPLETED")
+  let query: any = {};
+  if (status === "COMPLETED") {
+    query.status = "DELIVERED";
+  } else if (status === "ACTIVE") {
+    query.status = { $nin: ["DELIVERED", "CANCELLED", "REJECTED"] };
+  }
+
   if (isDatabaseConfigured()) {
     try {
       await connectToDatabase();
-      const rawOrders = await Order.find().sort({ createdAt: -1 }).lean();
+      // Default: show only active orders
+      const finalQuery = Object.keys(query).length > 0 ? query : { status: { $nin: ["DELIVERED", "CANCELLED", "REJECTED"] } };
+      const rawOrders = await Order.find(finalQuery).sort({ createdAt: -1 }).lean();
       const orders = rawOrders.map((o) => ({ ...o, id: String(o._id), _id: String(o._id) }));
       return NextResponse.json({ source: "database", orders });
     } catch (err) {
@@ -212,5 +248,10 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ source: "mock", orders: mockOrders });
+  // Mock mode
+  let activeOrders = mockOrders.filter(o => !["DELIVERED", "CANCELLED", "REJECTED"].includes(o.status));
+  if (status === "COMPLETED") {
+    activeOrders = mockOrders.filter(o => o.status === "DELIVERED");
+  }
+  return NextResponse.json({ source: "mock", orders: activeOrders });
 }
