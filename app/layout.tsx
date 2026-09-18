@@ -30,19 +30,26 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "TIA Flower Shop | Fresh Bouquets near Tribhuvan International Airport",
+    default: "TIA Flower Shop | Fresh Flowers & Bouquets near Kathmandu Airport",
     template: "%s | TIA Flower Shop",
   },
   description:
-    "Order fresh bouquets for arrivals and departures near TIA, Kathmandu. Choose online, we prepare fresh flowers and meet you at the airport.",
+    "Best flower shop near Tribhuvan International Airport Kathmandu. Fresh bouquets for arrivals, departures & special occasions. Same-day delivery available.",
   keywords: [
-    "flower shop near TIA",
-    "flowers Tribhuvan Airport Kathmandu",
-    "bouquet delivery Kathmandu Nepal",
-    "fresh flowers near airport",
-    "flower delivery TIA",
-    "khata flags Kathmandu",
-  ],
+  "flower shop near TIA",
+  "flower shop Kathmandu",
+  "flower shop airport",
+  "flower shop ktm airport",
+  "bouquet shop near tia",
+  "flowers Tribhuvan Airport",
+  "flower delivery airport Kathmandu",
+  "fresh flowers Nepal",
+  "bouquet delivery Kathmandu",
+  "flowers near airport ktm",
+  "khata flags Kathmandu",
+  "gifts near TIA",
+],
+
   icons: {
     icon: "/logo/tia-logo.jpeg",
     shortcut: "/logo/tia-logo.jpeg",

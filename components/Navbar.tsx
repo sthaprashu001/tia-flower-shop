@@ -14,7 +14,10 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-sand bg-ivory/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="transition hover:opacity-80">
+        <Link
+          href="/"
+          className="flex items-center gap-2 transition hover:opacity-80"
+        >
           <Image
             src="/logo/tia-logo.jpeg"
             alt="TIA Flower Shop"
@@ -23,6 +26,10 @@ export default function Navbar() {
             priority
             className="h-12 w-auto rounded-lg"
           />
+          <div className="hidden sm:block">
+            <h1 className="font-display text-lg italic text-rose-dark">TIA</h1>
+            <p className="text-xs text-charcoal/60">Flower Shop</p>
+          </div>
         </Link>
 
         <nav className="hidden gap-6 sm:flex">
