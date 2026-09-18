@@ -220,6 +220,12 @@ export default function AdminDashboardPage() {
             Manage bouquets →
           </button>
           <button
+            onClick={() => router.push("/admin/admins")}
+            className="whitespace-nowrap text-sm font-semibold text-rose-dark hover:underline"
+          >
+            Manage admins →
+          </button>
+          <button
             onClick={() => signOut({ callbackUrl: "/admin/login" })}
             className="whitespace-nowrap text-sm text-charcoal/60 hover:text-rose-dark"
           >

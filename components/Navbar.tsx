@@ -14,20 +14,17 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-sand bg-ivory/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link
-          href="/"
-          className="flex items-center gap-2 transition hover:opacity-80"
-        >
+        <Link href="/" className="flex items-center gap-1 transition hover:opacity-80 sm:gap-2">
           <Image
             src="/logo/tia-logo.jpeg"
             alt="TIA Flower Shop"
             width={50}
             height={50}
             priority
-            className="h-12 w-auto rounded-lg"
+            className="h-10 w-auto rounded-lg sm:h-12"
           />
-          <div className="hidden sm:block">
-            <h1 className="font-display text-lg italic text-rose-dark">TIA</h1>
+          <div>
+            <h1 className="font-display text-sm italic text-rose-dark sm:text-lg">TIA</h1>
             <p className="text-xs text-charcoal/60">Flower Shop</p>
           </div>
         </Link>
