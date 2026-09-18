@@ -30,30 +30,31 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "TIA Flower Shop | Fresh Flowers & Bouquets near Kathmandu Airport",
+    default:
+      "TIA Flower Shop | Fresh Flowers & Bouquets near Kathmandu Airport",
     template: "%s | TIA Flower Shop",
   },
   description:
     "Best flower shop near Tribhuvan International Airport Kathmandu. Fresh bouquets for arrivals, departures & special occasions. Same-day delivery available.",
   keywords: [
-  "flower shop near TIA",
-  "flower shop Kathmandu",
-  "flower shop airport",
-  "flower shop ktm airport",
-  "bouquet shop near tia",
-  "flowers Tribhuvan Airport",
-  "flower delivery airport Kathmandu",
-  "fresh flowers Nepal",
-  "bouquet delivery Kathmandu",
-  "flowers near airport ktm",
-  "khata flags Kathmandu",
-  "gifts near TIA",
-],
+    "flower shop near TIA",
+    "flower shop Kathmandu",
+    "flower shop airport",
+    "flower shop ktm airport",
+    "bouquet shop near tia",
+    "flowers Tribhuvan Airport",
+    "flower delivery airport Kathmandu",
+    "fresh flowers Nepal",
+    "bouquet delivery Kathmandu",
+    "flowers near airport ktm",
+    "khata flags Kathmandu",
+    "gifts near TIA",
+  ],
 
   icons: {
-    icon: "/logo/tia-logo.jpeg",
-    shortcut: "/logo/tia-logo.jpeg",
-    apple: "/logo/tia-logo.jpeg",
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
   },
   openGraph: {
     title: "TIA Flower Shop | Fresh Bouquets Near the Airport",
@@ -64,7 +65,12 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_NP",
     images: [
-      { url: "/logo/tia-logo.jpeg", width: 1024, height: 1024, alt: "TIA Flower Shop Logo" },
+      {
+        url: "/logo/tia-logo.jpeg",
+        width: 1024,
+        height: 1024,
+        alt: "TIA Flower Shop Logo",
+      },
       { url: "/images/red-rose-black-cover.jpeg", width: 1200, height: 900 },
     ],
   },
@@ -93,7 +99,9 @@ export default function RootLayout({
     process.env.NEXT_PUBLIC_TIKTOK_URL,
   ].filter((url): url is string => Boolean(url));
 
-  const address = process.env.NEXT_PUBLIC_SHOP_ADDRESS || "Near Tribhuvan International Airport, Kathmandu, Nepal";
+  const address =
+    process.env.NEXT_PUBLIC_SHOP_ADDRESS ||
+    "Near Tribhuvan International Airport, Kathmandu, Nepal";
   const latitude = process.env.NEXT_PUBLIC_SHOP_LATITUDE || "27.8176";
   const longitude = process.env.NEXT_PUBLIC_SHOP_LONGITUDE || "85.9124";
 
@@ -126,7 +134,10 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable} ${spaceMono.variable}`}>
+    <html
+      lang="en"
+      className={`${fraunces.variable} ${inter.variable} ${spaceMono.variable}`}
+    >
       <body className="font-body flex min-h-screen flex-col">
         <script
           type="application/ld+json"
