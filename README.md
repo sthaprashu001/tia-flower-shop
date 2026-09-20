@@ -13,25 +13,7 @@ See `docs/NEXT_STEPS.md` for the roadmap.
 - [MongoDB](https://www.mongodb.com/) + Mongoose (wired up, optional until Phase 2)
 - Deploys to [Vercel](https://vercel.com/)
 
-## Run it locally
 
-You need [Node.js](https://nodejs.org/) 18+ installed.
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Copy environment variables
-cp .env.example .env.local
-# then open .env.local and set your real WhatsApp number + admin key
-
-# 3. Start the dev server
-npm run dev
-```
-
-Open http://localhost:3000 in your browser. On your phone, use your
-computer's local IP (e.g. `http://192.168.1.23:3000`) while both devices
-are on the same Wi-Fi, to test the mobile-first design on a real screen.
 
 ## Project structure
 
@@ -56,62 +38,3 @@ lib/
 models/                    → Mongoose schemas (Product, Order)
 docs/NEXT_STEPS.md          → phase-by-phase roadmap
 ```
-
-## Editing your bouquet catalog (before you have a database)
-
-Open `lib/data.ts` and edit the `bouquets` array directly — name, price,
-description, image path, `available`, `customizable`. This is your
-product list until Phase 2 (MongoDB) is set up.
-
-## Admin dashboard
-
-Visit `/admin/login` and enter the value you set for `ADMIN_API_KEY` in
-`.env.local`. This is a **placeholder**, not real authentication — see
-`docs/NEXT_STEPS.md` Phase 3 before sharing dashboard access with anyone
-else.
-
-## Deploying to Vercel
-
-1. Push this project to GitHub (see "Git & GitHub instructions" below).
-2. Go to https://vercel.com, sign in with GitHub, and import the
-   `tia-flower-shop` repository.
-3. In the Vercel project settings, add environment variables from `.env.local`
-   (Vercel → Settings → Environment Variables) — most importantly:
-   - `NEXT_PUBLIC_SITE_URL=https://tiaflowershop.online`
-   - `MONGODB_URI` (if using database)
-   - `NEXTAUTH_SECRET` (for admin login)
-   - Social media URLs (`NEXT_PUBLIC_INSTAGRAM_URL`, etc.)
-4. Add custom domain: Vercel → Settings → Domains → Add `tiaflowershop.online`
-   and update nameservers in your domain registrar (Nepal Cloud, etc.)
-5. Every time you push to the `main` branch, Vercel auto-redeploys.
-
-## Git & GitHub instructions (review before pushing)
-
-These files were generated for you to **review first**. When you're
-happy with them:
-
-```bash
-# From inside the tia-flower-shop folder:
-git init                     # only if this folder isn't already a git repo
-git remote add origin https://github.com/sthaprashu001/tia-flower-shop.git
-git add .
-git commit -m "feat: Phase 1 MVP scaffold — homepage, bouquets, order flow, admin dashboard"
-git branch -M main
-git pull origin main --allow-unrelated-histories   # merge with existing README on GitHub
-git push origin main
-```
-
-If `git pull` shows a merge conflict on `README.md` (since your GitHub
-repo already has one commit with its own README), open the file, keep
-the version you prefer (this new one has more detail), remove the
-conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`), then:
-
-```bash
-git add README.md
-git commit -m "merge: resolve README conflict"
-git push origin main
-```
-
-**Never commit `.env.local`** — it's already in `.gitignore`, and it's
-where your real WhatsApp number, admin key, and (later) database
-credentials live.
