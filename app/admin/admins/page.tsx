@@ -40,6 +40,8 @@ export default function AdminsPage() {
   const [success, setSuccess] = useState("");
   const [tempPassword, setTempPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [settingPassword, setSettingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -127,6 +129,8 @@ export default function AdminsPage() {
         setSuccess(`✅ Admin updated successfully`);
         setEditingId(null);
         setFormData({ email: "", name: "", whatsappNumber: "", notifyOrders: true });
+        setNewPassword("");
+        setSettingPassword(false);
         loadAdmins();
       } else if (res.status === 401) {
         setError("Only SUPER_ADMIN can edit admins");
@@ -135,6 +139,40 @@ export default function AdminsPage() {
       }
     } catch (err) {
       setError("Error updating admin");
+      console.error(err);
+    }
+  }
+
+  async function handleSetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!editingId) return;
+    if (!newPassword.trim()) {
+      setError("Password cannot be empty");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admins/${editingId}/password`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: newPassword }),
+      });
+
+      if (res.ok) {
+        setSuccess(`✅ Password set successfully for ${formData.name}`);
+        setNewPassword("");
+        setSettingPassword(false);
+      } else if (res.status === 401) {
+        setError("Only SUPER_ADMIN can set passwords");
+      } else {
+        const data = await res.json();
+        setError(data.error || "Failed to set password");
+      }
+    } catch (err) {
+      setError("Error setting password");
       console.error(err);
     }
   }
@@ -171,6 +209,8 @@ export default function AdminsPage() {
     });
     setShowAddForm(false);
     setTempPassword("");
+    setNewPassword("");
+    setSettingPassword(false);
   }
 
   function cancelForm() {
@@ -178,6 +218,8 @@ export default function AdminsPage() {
     setEditingId(null);
     setFormData({ email: "", name: "", whatsappNumber: "", notifyOrders: true });
     setTempPassword("");
+    setNewPassword("");
+    setSettingPassword(false);
   }
 
   if (status === "loading" || loading) {
@@ -300,7 +342,65 @@ export default function AdminsPage() {
               />
             </div>
 
-            {/* Password (only for new admins) */}
+            {/* Password Section - Only for editing */}
+            {editingId && (
+              <div className="border-t border-sand pt-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <label className="text-sm font-medium text-charcoal">Password Management</label>
+                  <button
+                    type="button"
+                    onClick={() => setSettingPassword(!settingPassword)}
+                    className="text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    {settingPassword ? "Cancel" : "Set New Password"}
+                  </button>
+                </div>
+
+                {settingPassword && (
+                  <div className="space-y-3 rounded bg-sand/10 p-3">
+                    <div>
+                      <label className="block text-sm font-medium text-charcoal">New Password</label>
+                      <div className="relative mt-1">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Enter new password"
+                          className="w-full rounded-md border border-sand px-4 py-2 pr-10 text-charcoal"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-charcoal/60 hover:text-charcoal"
+                          title={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
+                              <path d="M15.171 13.576l1.414 1.414A10.025 10.025 0 0020.142 10c-1.274-4.057-5.064-7-9.542-7a9.971 9.971 0 00-3.516.654l2.02 2.02a4 4 0 015.484 5.484z" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSetPassword}
+                      className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                    >
+                      Set Password
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Password Info - Only for new admins */}
             {!editingId && (
               <div className="rounded bg-sand/10 p-3 text-sm text-charcoal/70">
                 📝 A temporary password will be auto-generated and shown after creation.
