@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import User from "@/models/User";
+import bcrypt from "bcryptjs";
 
 // PATCH - Update admin details
 export async function PATCH(
@@ -52,6 +53,7 @@ export async function PATCH(
 
     return NextResponse.json({
       admin: {
+        _id: String(admin._id),
         id: String(admin._id),
         email: admin.email,
         name: admin.name,

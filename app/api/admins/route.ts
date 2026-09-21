@@ -37,6 +37,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       admins: admins.map((a) => ({
+        _id: String(a._id),
         id: String(a._id),
         email: a.email,
         name: a.name,
@@ -117,6 +118,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         admin: {
+          _id: String(newAdmin._id),
           id: String(newAdmin._id),
           email: newAdmin.email,
           name: newAdmin.name,
