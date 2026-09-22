@@ -80,13 +80,13 @@ export default async function HomePage() {
               Flowers for arrivals &amp; farewells.
             </h1>
             <p className="mt-4 max-w-md text-charcoal/70">
-              <span className="text-rose-500 italic">
-                We prepare bouquets at home and deliver them near airport. We do
-                not have our physical shop yet!!
-              </span>{" "}
               Sending someone abroad or welcoming them home? We'll prepare fresh
               flowers for your special moment and have them ready near TIA when
               you need them.
+              <span className="block mt-2 text-rose-500 italic">
+                We prepare bouquets at home and deliver them near airport. We do
+                not have our physical shop yet!!
+              </span>
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
