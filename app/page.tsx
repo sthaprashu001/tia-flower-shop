@@ -77,6 +77,7 @@ export default async function HomePage() {
               Flowers for arrivals &amp; farewells.
             </h1>
             <p className="mt-4 max-w-md text-charcoal/70">
+              We Prepare bouquets at home and deliver them near airport. We do not have our physical shop yet!!
               Sending someone abroad or welcoming them home? We'll prepare
               fresh flowers for your special moment and have them ready near
               TIA when you need them.
