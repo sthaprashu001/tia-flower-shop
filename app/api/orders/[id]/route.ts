@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/guards";
+import { isObjectId } from "@/lib/validation";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import { Order as OrderType, OrderStatus } from "@/lib/types";
@@ -28,17 +28,22 @@ const VALID_STATUSES: OrderStatus[] = [
 ];
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireAdmin(req);
+  if ("error" in auth) return auth.error;
 
-  const { status } = await req.json();
-  if (!VALID_STATUSES.includes(status)) {
+  let body: { status?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+  const status = body?.status as OrderStatus;
+  if (typeof status !== "string" || !VALID_STATUSES.includes(status)) {
     return NextResponse.json({ error: "Invalid status." }, { status: 400 });
   }
 
   if (isDatabaseConfigured()) {
+    if (!isObjectId(params.id)) return NextResponse.json({ error: "Order not found." }, { status: 404 });
     try {
       await connectToDatabase();
       const order = await Order.findByIdAndUpdate(params.id, { status }, { new: true }).lean();
@@ -59,12 +64,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 // DELETE /api/orders/[id] — permanently remove an order from the
 // dashboard (e.g. once it's delivered, or a mistaken/spam order).
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireAdmin(req);
+  if ("error" in auth) return auth.error;
 
   if (isDatabaseConfigured()) {
+    if (!isObjectId(params.id)) return NextResponse.json({ error: "Order not found." }, { status: 404 });
     try {
       await connectToDatabase();
       const order = await Order.findByIdAndDelete(params.id);

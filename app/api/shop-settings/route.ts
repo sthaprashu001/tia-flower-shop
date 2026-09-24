@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/guards";
 import { getShopSettings, updateShopSettings } from "@/lib/shopSettings";
 import { isDatabaseConfigured } from "@/lib/mongodb";
 
@@ -12,10 +11,8 @@ export async function GET() {
 
 // PATCH — admin-only, used by the dashboard's shop settings section.
 export async function PATCH(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireAdmin(req);
+  if ("error" in auth) return auth.error;
   if (!isDatabaseConfigured()) {
     return NextResponse.json(
       { error: "MONGODB_URI is not set — connect a database to make this editable." },
@@ -23,19 +20,24 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  const body = await req.json();
+  let body: { status?: unknown; capacityPerHour?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
   const updates: { status?: "OPEN" | "BUSY" | "CLOSED"; capacityPerHour?: number } = {};
 
   if (body.status) {
-    if (!["OPEN", "BUSY", "CLOSED"].includes(body.status)) {
+    if (body.status !== "OPEN" && body.status !== "BUSY" && body.status !== "CLOSED") {
       return NextResponse.json({ error: "Invalid status." }, { status: 400 });
     }
     updates.status = body.status;
   }
   if (body.capacityPerHour !== undefined) {
     const n = Number(body.capacityPerHour);
-    if (!Number.isFinite(n) || n < 1) {
-      return NextResponse.json({ error: "Capacity must be a positive number." }, { status: 400 });
+    if (!Number.isInteger(n) || n < 1 || n > 200) {
+      return NextResponse.json({ error: "Capacity must be a whole number between 1 and 200." }, { status: 400 });
     }
     updates.capacityPerHour = n;
   }

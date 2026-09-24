@@ -1,15 +1,12 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/guards";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import Order from "@/models/Order";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireAdmin(req);
+    if ("error" in auth) return auth.error;
 
     if (!isDatabaseConfigured()) {
       return NextResponse.json(
