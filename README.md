@@ -15,7 +15,7 @@ See `docs/NEXT_STEPS.md` for the roadmap.
 
 
 
-## Project structure
+<!-- ## Project structure
 
 ```
 app/
@@ -37,4 +37,4 @@ lib/
   mongodb.ts                → database connection helper (Phase 2)
 models/                    → Mongoose schemas (Product, Order)
 docs/NEXT_STEPS.md          → phase-by-phase roadmap
-```
+``` -->
