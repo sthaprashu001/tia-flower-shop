@@ -3,11 +3,14 @@ import Image from "next/image";
 import ShopStatusBadge from "./ShopStatusBadge";
 import CartIcon from "./CartIcon";
 import ProductCategories from "./ProductCategories";
+import LanguageToggle from "./LanguageToggle";
+import T from "./T";
 
 const links = [
-  { href: "/order", label: "Order" },
-  { href: "/order-status", label: "Track Order" },
-  { href: "/contact", label: "Contact" },
+  { href: "/order", label: "nav.order" },
+  { href: "/order-status", label: "nav.track" },
+  { href: "/faq", label: "nav.faq" },
+  { href: "/contact", label: "nav.contact" },
 ];
 
 export default function Navbar() {
@@ -37,19 +40,20 @@ export default function Navbar() {
               href={link.href}
               className="font-body text-sm font-medium text-charcoal transition hover:text-rose"
             >
-              {link.label}
+              <T k={link.label} />
             </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageToggle />
           <ShopStatusBadge compact />
           <CartIcon />
           <Link
             href="/order"
             className="hidden rounded-full bg-rose px-4 py-2 text-sm font-semibold text-ivory transition hover:bg-rose-dark sm:inline-block"
           >
-            Order now
+            <T k="nav.orderNow" />
           </Link>
         </div>
       </div>
@@ -60,7 +64,7 @@ export default function Navbar() {
           href="/bouquets"
           className="whitespace-nowrap text-sm font-medium text-charcoal hover:text-rose"
         >
-          Products
+          <T k="nav.products" />
         </Link>
         {links.map((link) => (
           <Link
@@ -68,7 +72,7 @@ export default function Navbar() {
             href={link.href}
             className="whitespace-nowrap text-sm font-medium text-charcoal hover:text-rose"
           >
-            {link.label}
+            <T k={link.label} />
           </Link>
         ))}
       </nav>

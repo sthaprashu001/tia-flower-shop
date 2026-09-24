@@ -28,6 +28,7 @@ export default function Footer() {
           <ul className="mt-3 space-y-2 text-sm">
             <li><Link href="/bouquets" className="hover:text-rose-light">Bouquets</Link></li>
             <li><Link href="/order" className="hover:text-rose-light">Place an order</Link></li>
+            <li><Link href="/faq" className="hover:text-rose-light">FAQ</Link></li>
             <li><Link href="/contact" className="hover:text-rose-light">Contact</Link></li>
             <li><Link href="/admin/login" className="hover:text-rose-light">Admin</Link></li>
           </ul>

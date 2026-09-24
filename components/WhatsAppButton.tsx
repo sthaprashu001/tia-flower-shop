@@ -19,7 +19,7 @@ export default function WhatsAppButton({
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat with us on WhatsApp"
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-sage px-4 py-3 text-sm font-semibold text-ivory shadow-lg transition hover:bg-sage-dark sm:bottom-6 sm:right-6"
+        className="fixed bottom-20 right-5 z-50 flex items-center gap-2 rounded-full bg-sage px-4 py-3 text-sm font-semibold text-ivory shadow-lg transition hover:bg-sage-dark sm:bottom-6 sm:right-6"
       >
         <span aria-hidden>💬</span>
         <span className="hidden sm:inline">WhatsApp</span>

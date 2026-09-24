@@ -7,6 +7,10 @@ import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import { parseProductFields } from "@/lib/validation";
 import Product from "@/models/Product";
 
+// Availability and lead times change from the admin panel at any time, so
+// this must never be cached.
+export const dynamic = "force-dynamic";
+
 // `cost` is the shop's private buying price (used for the admin profit view).
 // It must only ever be sent to a logged-in, active admin — never to customers.
 async function callerIsAdmin(): Promise<boolean> {
@@ -45,6 +49,7 @@ export async function GET() {
       category: p.category || "Bouquets",
       featured: p.featured === true, // Explicitly convert to boolean
       featuredOrder: Number(p.featuredOrder) || 0,
+      leadTimeHours: Number(p.leadTimeHours) || 0,
     }));
     return NextResponse.json({ source: "database", products });
   } catch (err) {

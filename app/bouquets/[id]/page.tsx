@@ -4,6 +4,8 @@ import Image from "next/image";
 import { Metadata } from "next";
 import { getBouquetById } from "@/lib/products";
 import AddToCartButton from "@/components/AddToCartButton";
+import LeadTimeNote from "@/components/LeadTimeNote";
+import T from "@/components/T";
 
 // Bouquets can be added/edited any time from the admin panel, so this page
 // is rendered fresh on every request instead of pre-generated at build time.
@@ -39,7 +41,7 @@ export default async function BouquetDetailPage({ params }: { params: { id: stri
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <Link href="/bouquets" className="text-sm text-charcoal/60 hover:text-rose-dark">
-        ← Back to bouquets
+        <T k="detail.back" />
       </Link>
 
       <div className="mt-4 grid gap-8 sm:grid-cols-2">
@@ -62,24 +64,28 @@ export default async function BouquetDetailPage({ params }: { params: { id: stri
 
           {!bouquet.available && (
             <p className="mt-3 inline-block rounded-full bg-charcoal/10 px-3 py-1 text-xs font-semibold text-charcoal/70">
-              Not available today — check back or ask us on WhatsApp
+              <T k="detail.notAvailable" />
             </p>
           )}
 
           <p className="mt-4 text-charcoal/70">{bouquet.description}</p>
 
+          {(bouquet.leadTimeHours || 0) > 0 && (
+            <p className="mt-3 rounded-card bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              ⏰ <LeadTimeNote hours={bouquet.leadTimeHours || 0} k="detail.leadNotice" />
+            </p>
+          )}
+
           {bouquet.customizable && (
             <p className="mt-3 rounded-card bg-sage-light px-4 py-3 text-sm text-sage-dark">
-              This bouquet can be customized — flower choice, wrapping color,
-              ribbon, or a personal note. You can describe what you want in
-              the order form.
+              <T k="detail.customizable" />
             </p>
           )}
 
           <AddToCartButton bouquetId={bouquet.id} available={bouquet.available} variant="full" />
           {bouquet.available && (
             <p className="mt-2 text-xs text-charcoal/50">
-              Added to cart — <Link href="/cart" className="underline hover:text-rose-dark">view cart</Link> when ready to order.
+              <T k="detail.addedTo" /> <Link href="/cart" className="underline hover:text-rose-dark"><T k="detail.viewCart" /></Link> <T k="detail.whenReady" />
             </p>
           )}
         </div>

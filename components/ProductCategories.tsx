@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useLang } from "./LanguageProvider";
 
 export default function ProductCategories() {
   const [categories, setCategories] = useState<string[]>(["Bouquets"]);
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useLang();
 
   useEffect(() => {
     async function loadCategories() {
@@ -26,7 +28,7 @@ export default function ProductCategories() {
         href="/bouquets"
         className="font-body text-sm font-medium text-charcoal transition hover:text-rose"
       >
-        Bouquets
+        {t("nav.bouquets")}
       </Link>
     );
   }
@@ -37,7 +39,7 @@ export default function ProductCategories() {
         onClick={() => setIsOpen(!isOpen)}
         className="font-body text-sm font-medium text-charcoal transition hover:text-rose flex items-center gap-1"
       >
-        Products
+        {t("nav.products")}
         <svg
           className={`h-4 w-4 transition ${isOpen ? "rotate-180" : ""}`}
           fill="none"
@@ -55,7 +57,7 @@ export default function ProductCategories() {
             onClick={() => setIsOpen(false)}
             className="block w-full px-4 py-2 text-left text-sm text-charcoal hover:bg-sand/50 first:rounded-t-card"
           >
-            All Products
+            {t("cat.allProducts")}
           </Link>
           {categories.map((cat) => (
             <Link

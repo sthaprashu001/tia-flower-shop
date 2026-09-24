@@ -99,6 +99,13 @@ export function parseProductFields(
       data[flag] = b[flag];
     }
   }
+  if ("leadTimeHours" in b) {
+    const n = num(b.leadTimeHours, 0, 720);
+    if (n === null || !Number.isInteger(n)) {
+      return { error: "Order-before time must be a whole number of hours (0–720)." };
+    }
+    data.leadTimeHours = n;
+  }
   if ("featuredOrder" in b) {
     const n = num(b.featuredOrder, 0, 50);
     if (n === null || !Number.isInteger(n)) return { error: "Featured order must be a whole number." };
