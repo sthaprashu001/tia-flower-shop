@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import PasswordInput from "@/components/PasswordInput";
 import { useSession, signOut } from "next-auth/react";
 import { Order, OrderStatus, Bouquet, ShopStatus } from "@/lib/types";
 
@@ -413,14 +414,7 @@ export default function AdminDashboardPage() {
               <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
                 Password
               </label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={staffPassword}
-                onChange={(e) => setStaffPassword(e.target.value)}
-                className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-              />
+              <PasswordInput value={staffPassword} onChange={setStaffPassword} required minLength={8} autoComplete="new-password" />
             </div>
           </div>
 
