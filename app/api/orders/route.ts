@@ -4,7 +4,9 @@ import { requireAdmin } from "@/lib/guards";
 import { clientIp, rateLimit, tooManyRequests } from "@/lib/rateLimit";
 import { cleanText, isIsoDate, isPhone, isTime } from "@/lib/validation";
 import { getBouquetById } from "@/lib/products";
-import { getShopSettings } from "@/lib/shopSettings";
+import { getShopSettings, ShopSettingsValue } from "@/lib/shopSettings";
+import { getHourCounts, suggestSlots } from "@/lib/orderSlots";
+import { SHOP_UTC_OFFSET_MINUTES, addDaysIso, earliestPickupMs, formatPickup, leadTimeLabel, pickupInstantMs, shopToday } from "@/lib/time";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import { sendWhatsAppNotificationToAdmins } from "@/lib/whatsapp";
 import Order from "@/models/Order";
@@ -42,49 +44,17 @@ function generateOrderNumber() {
   return `TIA${crypto.randomInt(100000, 1000000)}`;
 }
 
-// Groups orders into hour-long slots by date + the hour portion of the
-// requested time (e.g. "14:30" -> hour "14"), so "8 orders per hour" means
-// per requested pickup hour, not per hour the order was placed.
-function hourBucket(date: string, time: string) {
-  return `${date}T${time.slice(0, 2)}`;
-}
-
-async function countOrdersInSameHour(date: string, time: string, excludeOrderId?: string) {
-  const targetBucket = hourBucket(date, time);
-  const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DELIVERED"];
-
-  if (isDatabaseConfigured()) {
-    await connectToDatabase();
-    const candidates = await Order.find({ date, status: { $in: activeStatuses } })
-      .select("time _id")
-      .lean<{ _id: unknown; time: string }[]>();
-    return candidates.filter(
-      (o) => hourBucket(date, o.time) === targetBucket && String(o._id) !== excludeOrderId
-    ).length;
-  }
-
-  return mockOrders.filter(
-    (o) =>
-      o.date === date &&
-      activeStatuses.includes(o.status) &&
-      hourBucket(o.date, o.time) === targetBucket &&
-      o.id !== excludeOrderId
-  ).length;
-}
-
-async function computeTotal(items: OrderInput["items"]) {
-  let total = 0;
-  for (const item of items) {
-    const bouquet = await getBouquetById(item.bouquetId);
-    if (bouquet) total += bouquet.price * item.quantity;
-  }
-  return total;
-}
-
 type ParsedOrder = Omit<OrderInput, "urgent"> & { urgent: boolean };
+type ParseFailure = { error: string; extra?: Record<string, unknown> };
+
+const pad = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
 // Every field arrives as `unknown`; nothing is trusted until it's checked here.
-async function parseOrder(raw: unknown): Promise<{ error: string } | { data: ParsedOrder }> {
+async function parseOrder(
+  raw: unknown,
+  settings: ShopSettingsValue,
+  nowMs: number
+): Promise<ParseFailure | { data: ParsedOrder; leadHours: number }> {
   if (!raw || typeof raw !== "object") return { error: "Invalid request." };
   const b = raw as Record<string, unknown>;
 
@@ -98,6 +68,8 @@ async function parseOrder(raw: unknown): Promise<{ error: string } | { data: Par
   if (b.items.length > 20) return { error: "Too many items in one order." };
 
   const items: OrderInput["items"] = [];
+  let leadHours = 0;
+  let leadProduct = "";
   for (const it of b.items) {
     const line = (it && typeof it === "object" ? it : {}) as Record<string, unknown>;
     const quantity = line.quantity;
@@ -109,28 +81,52 @@ async function parseOrder(raw: unknown): Promise<{ error: string } | { data: Par
     }
     const bouquet = await getBouquetById(line.bouquetId);
     if (!bouquet) return { error: "One of the bouquets in your order no longer exists." };
-    if (!bouquet.available) return { error: `"${bouquet.name}" is not available today.` };
-    items.push({ bouquetId: line.bouquetId, quantity });
+    if (!bouquet.available) return { error: `"${bouquet.name}" is not available today. Please remove it from your cart.` };
+    if ((bouquet.leadTimeHours || 0) > leadHours) {
+      leadHours = bouquet.leadTimeHours || 0;
+      leadProduct = bouquet.name;
+    }
+    // Name and price are copied from the catalog at order time (never from the client).
+    items.push({ bouquetId: line.bouquetId, quantity, name: bouquet.name, unitPrice: bouquet.price });
   }
 
   if (!isIsoDate(b.date)) return { error: "Date is required." };
-  // Pickup date must be today (allowing for timezone differences) up to 90 days ahead.
-  const dayMs = 24 * 60 * 60 * 1000;
-  const diffDays = (new Date(`${b.date}T00:00:00Z`).getTime() - Date.now()) / dayMs;
-  if (diffDays < -1.5 || diffDays > 90) return { error: "Please choose a pickup date within the next 90 days." };
-
   if (!isTime(b.time)) return { error: "Time is required." };
+  const date = b.date;
+  const time = b.time;
+
+  if (date > addDaysIso(shopToday(nowMs), 90)) return { error: "Please choose a pickup date within the next 90 days." };
+
+  // Pickups only during opening hours (shop time).
+  const minutes = Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+  if (minutes < settings.openHour * 60 || minutes >= settings.closeHour * 60) {
+    return { error: `We take pickups between ${pad(settings.openHour)} and ${pad(settings.closeHour)}. Please choose a time in that range.` };
+  }
+
+  const instant = pickupInstantMs(date, time);
+  if (instant < nowMs) return { error: "That pickup time has already passed. Please choose a later time." };
+
+  // Per-product "order at least X before" rule.
+  if (leadHours > 0 && instant < earliestPickupMs(nowMs, leadHours)) {
+    // Earliest allowed moment expressed in shop time, for a helpful message.
+    const earliestShop = new Date(earliestPickupMs(nowMs, leadHours) + SHOP_UTC_OFFSET_MINUTES * 60_000).toISOString();
+    return {
+      error: `"${leadProduct}" must be ordered at least ${leadTimeLabel(leadHours)} before pickup. The earliest pickup for this order is ${formatPickup(earliestShop.slice(0, 10), earliestShop.slice(11, 16))}.`,
+      extra: { leadTimeHours: leadHours, earliestDate: earliestShop.slice(0, 10), earliestTime: earliestShop.slice(11, 16) },
+    };
+  }
 
   const meetingLocation = cleanText(b.meetingLocation, 200);
   if (!meetingLocation) return { error: "Meeting location near TIA is required." };
 
   return {
+    leadHours,
     data: {
       customerName,
       phone,
       items,
-      date: b.date,
-      time: b.time,
+      date,
+      time,
       meetingLocation,
       customizationNote: cleanText(b.customizationNote, 500),
       personalMessage: cleanText(b.personalMessage, 300),
@@ -151,25 +147,43 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const parsed = await parseOrder(raw);
+  const nowMs = Date.now();
+  const settings = await getShopSettings();
+
+  const parsed = await parseOrder(raw, settings, nowMs);
   if ("error" in parsed) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
+    return NextResponse.json({ error: parsed.error, ...parsed.extra }, { status: 400 });
   }
   const input = parsed.data;
 
-  const { capacityPerHour } = await getShopSettings();
-  const existingInHour = await countOrdersInSameHour(input.date, input.time);
-  if (existingInHour >= capacityPerHour) {
+  // Hourly capacity — on a full slot, offer the nearest free ones.
+  const counts = await getHourCounts(input.date);
+  const existingInHour = counts[input.time.slice(0, 2)] || 0;
+  if (existingInHour >= settings.capacityPerHour) {
+    const suggestions = suggestSlots({
+      date: input.date,
+      requestedTime: input.time,
+      counts,
+      capacityPerHour: settings.capacityPerHour,
+      openHour: settings.openHour,
+      closeHour: settings.closeHour,
+      leadHours: parsed.leadHours,
+      nowMs,
+    });
     return NextResponse.json(
       {
-        error: `That time slot is fully booked (${existingInHour}/${capacityPerHour} orders). Please choose a different time.`,
+        error:
+          suggestions.length > 0
+            ? `That time slot is fully booked. These nearby times are free: ${suggestions.join(", ")}.`
+            : "That time slot is fully booked, and nothing else is free that day. Please try another date.",
+        suggestions,
       },
       { status: 409 }
     );
   }
 
   // Price is always recomputed on the server from the catalog — never taken from the client.
-  const total = await computeTotal(input.items);
+  const total = input.items.reduce((sum, i) => sum + (i.unitPrice || 0) * i.quantity, 0);
 
   const buildDoc = (orderNumber: string): OrderType => ({
     id: orderNumber,
@@ -215,8 +229,19 @@ export async function POST(req: NextRequest) {
     mockOrders.unshift(orderDoc);
   }
 
-  // Send notification to admin
+  // Tell the shop team (WhatsApp) — never blocks or fails the customer's order.
   await sendOrderNotification(orderDoc);
+  await sendWhatsAppNotificationToAdmins({
+    orderNumber: orderDoc.orderNumber,
+    customerName: orderDoc.customerName,
+    phone: orderDoc.phone,
+    date: orderDoc.date,
+    time: orderDoc.time,
+    location: orderDoc.meetingLocation,
+    total: orderDoc.total,
+    urgent: orderDoc.urgent === true,
+    items: orderDoc.items,
+  });
 
   return NextResponse.json({ order: orderDoc }, { status: 201 });
 }

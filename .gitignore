@@ -7,7 +7,7 @@ out/
 # secrets — never commit any real env file (only .env.example is tracked)
 .env
 .env.*
-.env.example
+!.env.example
 
 # platform / OS / editor
 .vercel/

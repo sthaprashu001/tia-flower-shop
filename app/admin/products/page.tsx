@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { LEAD_TIME_PRESETS, leadTimeLabel } from "@/lib/time";
 
 /**
  * Admin product management.
@@ -30,7 +31,36 @@ interface AdminProduct {
   category?: string;
   featured?: boolean;
   featuredOrder?: number;
+  leadTimeHours?: number;
 }
+
+/**
+ * Shrinks a big phone photo before uploading (max 1600px, JPEG). Faster to
+ * upload, faster for customers to load, and keeps it under the upload limit.
+ * If anything goes wrong the original file is used unchanged.
+ */
+async function shrinkImage(file: File): Promise<File> {
+  try {
+    if (file.size < 300 * 1024) return file;
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.fillStyle = "#ffffff"; // PNGs with transparency get a white background
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+}
+
+const PRESET_HOURS = LEAD_TIME_PRESETS.map((p) => p.hours);
 
 const emptyForm = {
   name: "",
@@ -43,6 +73,7 @@ const emptyForm = {
   category: "Bouquets",
   featured: false,
   featuredOrder: 0,
+  leadTimeHours: "0", // minimum notice in hours; "0" = none
 };
 
 export default function AdminProductsPage() {
@@ -59,6 +90,8 @@ export default function AdminProductsPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [customLead, setCustomLead] = useState(false);
+  const [toggling, setToggling] = useState<Record<string, boolean>>({});
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -106,13 +139,16 @@ export default function AdminProductsPage() {
       category: p.category || "Bouquets",
       featured: p.featured ?? false,
       featuredOrder: p.featuredOrder ?? 0,
+      leadTimeHours: String(p.leadTimeHours ?? 0),
     });
+    setCustomLead(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function cancelEdit() {
     setEditingId(null);
     setForm(emptyForm);
+    setCustomLead(false);
     setFormError(null);
   }
 
@@ -124,7 +160,7 @@ export default function AdminProductsPage() {
     setFormError(null);
     try {
       const body = new FormData();
-      body.append("file", file);
+      body.append("file", await shrinkImage(file));
       const res = await fetch("/api/upload", {
         method: "POST",
         body,
@@ -147,6 +183,11 @@ export default function AdminProductsPage() {
     const price = Number(form.price);
     if (!price || price <= 0) return setFormError("Enter a valid price.");
 
+    const leadHours = Number(form.leadTimeHours);
+    if (!Number.isInteger(leadHours) || leadHours < 0 || leadHours > 720) {
+      return setFormError("Order-before time must be a whole number of hours (0–720).");
+    }
+
     setSaving(true);
     const payload = {
       name: form.name.trim(),
@@ -159,6 +200,7 @@ export default function AdminProductsPage() {
       category: form.category.trim() || "Bouquets",
       featured: form.featured,
       featuredOrder: form.featuredOrder,
+      leadTimeHours: leadHours,
     };
 
     try {
@@ -177,6 +219,27 @@ export default function AdminProductsPage() {
       setFormError(err instanceof Error ? err.message : "Could not save product.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  // One-tap availability switch. The shop pages read the database on every visit,
+  // so the change shows on the catalog straight away — no redeploy.
+  async function handleToggleAvailable(p: AdminProduct) {
+    const next = !p.available;
+    setToggling((t) => ({ ...t, [p._id]: true }));
+    setProducts((prev) => prev.map((x) => (x._id === p._id ? { ...x, available: next } : x)));
+    try {
+      const res = await fetch(`/api/products/${p._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ available: next }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setProducts((prev) => prev.map((x) => (x._id === p._id ? { ...x, available: !next } : x)));
+      alert("Could not change availability — try again.");
+    } finally {
+      setToggling((t) => ({ ...t, [p._id]: false }));
     }
   }
 
@@ -306,6 +369,49 @@ export default function AdminProductsPage() {
                 className="mt-2 h-24 w-24 rounded-md border border-sand object-cover"
               />
             )}
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+              Order before (minimum notice)
+            </label>
+            <select
+              value={customLead || !PRESET_HOURS.includes(Number(form.leadTimeHours)) ? "custom" : form.leadTimeHours}
+              onChange={(e) => {
+                if (e.target.value === "custom") {
+                  setCustomLead(true);
+                } else {
+                  setCustomLead(false);
+                  setForm((f) => ({ ...f, leadTimeHours: e.target.value }));
+                }
+              }}
+              className="mt-1 w-full rounded-md border border-sand bg-white px-3 py-2"
+            >
+              {LEAD_TIME_PRESETS.map((o) => (
+                <option key={o.hours} value={String(o.hours)}>
+                  {o.label}
+                </option>
+              ))}
+              <option value="custom">Custom (choose the hours)…</option>
+            </select>
+            {(customLead || !PRESET_HOURS.includes(Number(form.leadTimeHours))) && (
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={720}
+                  value={form.leadTimeHours}
+                  onChange={(e) => setForm((f) => ({ ...f, leadTimeHours: e.target.value }))}
+                  className="w-28 rounded-md border border-sand px-3 py-2"
+                />
+                <span className="text-sm text-charcoal/60">hours before pickup</span>
+              </div>
+            )}
+            <p className="mt-1 text-xs text-charcoal/50">
+              {Number(form.leadTimeHours) > 0
+                ? `Customers must order at least ${leadTimeLabel(Number(form.leadTimeHours))} before pickup. They see this on the product, in their cart and on the order form, and earlier pickup times are switched off for them.`
+                : "No minimum — customers can pick any free pickup time."}
+            </p>
           </div>
 
           <div>
@@ -489,9 +595,36 @@ export default function AdminProductsPage() {
                   )}
                 </div>
                 <p className="mt-1 text-xs text-charcoal/50">
-                  {p.available ? "Available" : "Unavailable"}
-                  {p.customizable ? " · Customizable" : ""}
+                  {p.customizable ? "Customizable" : ""}
+                  {p.customizable && (p.leadTimeHours || 0) > 0 ? " · " : ""}
+                  {(p.leadTimeHours || 0) > 0 ? `Order ${leadTimeLabel(p.leadTimeHours || 0)} ahead` : ""}
                 </p>
+                {!dbNotConnected && (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={p.available}
+                    aria-label={`${p.name} available`}
+                    disabled={toggling[p._id]}
+                    onClick={() => handleToggleAvailable(p)}
+                    className="mt-2 flex items-center gap-2 disabled:opacity-60"
+                  >
+                    <span
+                      className={`relative inline-block h-6 w-11 rounded-full transition ${
+                        p.available ? "bg-sage" : "bg-charcoal/25"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                          p.available ? "left-[1.375rem]" : "left-0.5"
+                        }`}
+                      />
+                    </span>
+                    <span className={`text-xs font-semibold ${p.available ? "text-sage-dark" : "text-charcoal/50"}`}>
+                      {p.available ? "Available" : "Sold out"}
+                    </span>
+                  </button>
+                )}
                 {!dbNotConnected && (
                   <div className="mt-2 flex gap-3 text-sm">
                     <button onClick={() => startEdit(p)} className="text-rose-dark hover:underline">

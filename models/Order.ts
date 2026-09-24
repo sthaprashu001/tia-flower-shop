@@ -4,6 +4,8 @@ const OrderItemSchema = new Schema(
   {
     bouquetId: { type: String, required: true },
     quantity: { type: Number, required: true, min: 1, max: 50 },
+    name: { type: String, maxlength: 100 },
+    unitPrice: { type: Number, min: 0 },
   },
   { _id: false }
 );

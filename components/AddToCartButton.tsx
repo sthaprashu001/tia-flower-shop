@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useCart } from "./CartProvider";
+import { useLang } from "./LanguageProvider";
 
 export default function AddToCartButton({
   bouquetId,
@@ -13,6 +14,7 @@ export default function AddToCartButton({
   variant?: "compact" | "full";
 }) {
   const { addItem } = useCart();
+  const { t } = useLang();
   const [added, setAdded] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
@@ -73,7 +75,7 @@ export default function AddToCartButton({
             available ? "bg-rose hover:bg-rose-dark" : "pointer-events-none bg-charcoal/30"
           }`}
         >
-          {!available ? "Currently unavailable" : added ? "Added ✓" : "Add to cart"}
+          {!available ? t("btn.unavailable") : added ? t("btn.added") : t("btn.add")}
         </button>
       </div>
     );
@@ -120,7 +122,7 @@ export default function AddToCartButton({
             : "bg-rose text-ivory hover:bg-rose-dark"
         }`}
       >
-        {!available ? "Sold out" : added ? "Added ✓" : "Add to cart"}
+        {!available ? t("btn.soldOut") : added ? t("btn.added") : t("btn.add")}
       </button>
     </div>
   );

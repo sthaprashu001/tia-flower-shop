@@ -6,6 +6,8 @@ import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import { CartProvider } from "@/components/CartProvider";
+import { LanguageProvider } from "@/components/LanguageProvider";
+import StickyCartBar from "@/components/StickyCartBar";
 import { siteUrl } from "@/lib/site";
 
 const fraunces = Fraunces({
@@ -144,12 +146,15 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
         />
         <SessionProviderWrapper>
-          <CartProvider>
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <WhatsAppButton floating />
-          </CartProvider>
+          <LanguageProvider>
+            <CartProvider>
+              <Navbar />
+              <main className="flex-1 pb-16 sm:pb-0">{children}</main>
+              <Footer />
+              <WhatsAppButton floating />
+              <StickyCartBar />
+            </CartProvider>
+          </LanguageProvider>
         </SessionProviderWrapper>
       </body>
     </html>

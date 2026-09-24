@@ -20,13 +20,18 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  let body: { status?: unknown; capacityPerHour?: unknown };
+  let body: { status?: unknown; capacityPerHour?: unknown; openHour?: unknown; closeHour?: unknown };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
-  const updates: { status?: "OPEN" | "BUSY" | "CLOSED"; capacityPerHour?: number } = {};
+  const updates: {
+    status?: "OPEN" | "BUSY" | "CLOSED";
+    capacityPerHour?: number;
+    openHour?: number;
+    closeHour?: number;
+  } = {};
 
   if (body.status) {
     if (body.status !== "OPEN" && body.status !== "BUSY" && body.status !== "CLOSED") {
@@ -40,6 +45,20 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Capacity must be a whole number between 1 and 200." }, { status: 400 });
     }
     updates.capacityPerHour = n;
+  }
+
+  if (body.openHour !== undefined || body.closeHour !== undefined) {
+    const current = await getShopSettings();
+    const open = body.openHour !== undefined ? Number(body.openHour) : current.openHour;
+    const close = body.closeHour !== undefined ? Number(body.closeHour) : current.closeHour;
+    if (!Number.isInteger(open) || !Number.isInteger(close) || open < 0 || open > 23 || close < 1 || close > 24) {
+      return NextResponse.json({ error: "Hours must be whole numbers (open 0–23, close 1–24)." }, { status: 400 });
+    }
+    if (open >= close) {
+      return NextResponse.json({ error: "Closing hour must be later than opening hour." }, { status: 400 });
+    }
+    updates.openHour = open;
+    updates.closeHour = close;
   }
 
   try {

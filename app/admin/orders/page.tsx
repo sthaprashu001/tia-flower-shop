@@ -1,49 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { Order, OrderStatus, Bouquet } from "@/lib/types";
+import AdminOrderCard from "@/components/admin/AdminOrderCard";
+import { useOrderAlerts } from "@/components/admin/useOrderAlerts";
 
-interface OrderItem {
-  bouquetId: string;
-  quantity: number;
-}
-
-interface Order {
-  _id: string;
-  id: string;
-  orderNumber: string;
-  customerName: string;
-  phone: string;
-  items: OrderItem[];
-  date: string;
-  time: string;
-  meetingLocation: string;
-  customizationNote?: string;
-  personalMessage?: string;
-  urgent: boolean;
-  total: number;
-  status: "PENDING" | "CONFIRMED" | "PREPARING" | "READY" | "DELIVERED" | "CANCELLED" | "REJECTED";
-  createdAt?: string;
-}
+const POLL_MS = 30_000; // the list refreshes by itself this often
 
 export default function AdminOrdersPage() {
   const router = useRouter();
   const { status: authStatus } = useSession();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("PENDING");
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (authStatus === "unauthenticated") {
-      router.push("/admin/login");
-      return;
-    }
+  const { soundOn, toggleSound } = useOrderAlerts(orders, !loading);
 
-    loadOrders();
-  }, [authStatus, router]);
-
-  async function loadOrders() {
+  const loadOrders = useCallback(async () => {
     try {
       const res = await fetch("/api/orders");
       if (res.ok) {
@@ -55,21 +33,52 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  async function updateOrderStatus(orderId: string, newStatus: string) {
+  useEffect(() => {
+    if (authStatus === "unauthenticated") {
+      router.push("/admin/login");
+      return;
+    }
+    if (authStatus !== "authenticated") return;
+
+    loadOrders();
+    // Names for older orders that were saved before item names were stored with them.
+    fetch("/api/products")
+      .then((res) => res.json())
+      .then((data) => {
+        const map: Record<string, string> = {};
+        (data.products || []).forEach((b: Bouquet) => {
+          map[b.id] = b.name;
+        });
+        setNames(map);
+      })
+      .catch(() => {});
+
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") loadOrders();
+    }, POLL_MS);
+    return () => clearInterval(id);
+  }, [authStatus, router, loadOrders]);
+
+  async function updateOrderStatus(orderId: string, newStatus: OrderStatus) {
+    setSaving((s) => ({ ...s, [orderId]: true }));
+    setErrors((e) => ({ ...e, [orderId]: "" }));
+    const previous = orders.find((o) => o.id === orderId)?.status;
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
+
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-
-      if (res.ok) {
-        loadOrders();
-      }
-    } catch (error) {
-      console.error("Failed to update order status:", error);
+      if (!res.ok) throw new Error();
+    } catch {
+      setOrders((prev) => prev.map((o) => (o.id === orderId && previous ? { ...o, status: previous } : o)));
+      setErrors((e) => ({ ...e, [orderId]: "Could not save — try again." }));
+    } finally {
+      setSaving((s) => ({ ...s, [orderId]: false }));
     }
   }
 
@@ -79,12 +88,21 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8 flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl italic text-charcoal">Active Orders</h1>
           <p className="mt-2 text-sm text-charcoal/70">
             {pendingCount} pending • {readyCount} ready for pickup
           </p>
+          <button
+            onClick={toggleSound}
+            className={`mt-3 rounded-full border px-4 py-1.5 text-sm font-semibold transition ${
+              soundOn ? "border-sage bg-sage-light text-sage-dark" : "border-sand text-charcoal/70 hover:border-rose"
+            }`}
+          >
+            {soundOn ? "🔔 New-order sound: on" : "🔕 New-order sound: off"}
+          </button>
+          <p className="mt-1 text-xs text-charcoal/50">Refreshes by itself every 30 seconds.</p>
         </div>
         <div className="flex flex-col gap-2">
           <button
@@ -93,10 +111,7 @@ export default function AdminOrdersPage() {
           >
             View completed →
           </button>
-          <button
-            onClick={() => router.push("/admin/dashboard")}
-            className="text-sm text-charcoal/60 hover:text-rose-dark"
-          >
+          <button onClick={() => router.push("/admin/dashboard")} className="text-sm text-charcoal/60 hover:text-rose-dark">
             ← Back to dashboard
           </button>
         </div>
@@ -108,10 +123,8 @@ export default function AdminOrdersPage() {
           <button
             key={status}
             onClick={() => setFilter(status)}
-            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition ${
-              filter === status
-                ? "bg-rose text-white"
-                : "bg-sand text-charcoal hover:bg-sand/70"
+            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
+              filter === status ? "bg-rose text-white" : "bg-sand text-charcoal hover:bg-sand/70"
             }`}
           >
             {status}
@@ -136,61 +149,14 @@ export default function AdminOrdersPage() {
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <div
-              key={order._id}
-              className={`rounded-card border p-4 transition ${
-                order.status === "PENDING"
-                  ? "border-yellow-300 bg-yellow-50"
-                  : order.status === "READY"
-                    ? "border-green-300 bg-green-50"
-                    : "border-sand bg-white"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-charcoal">
-                    {order.orderNumber} — {order.customerName}
-                  </h3>
-                  <p className="mt-1 text-sm text-charcoal/70">
-                    📱 {order.phone} • 📍 {order.meetingLocation}
-                  </p>
-                  <p className="mt-1 text-sm text-charcoal/70">
-                    📅 {order.date} at {order.time} • Rs. {order.total}
-                  </p>
-
-                  {/* Items */}
-                  <div className="mt-2 text-xs text-charcoal/60">
-                    <p>Items: {order.items.map((i) => `${i.bouquetId} (×${i.quantity})`).join(", ")}</p>
-                  </div>
-
-                  {/* Notes */}
-                  {(order.customizationNote || order.personalMessage) && (
-                    <div className="mt-2 rounded bg-charcoal/5 p-2 text-xs">
-                      {order.customizationNote && <p>📝 {order.customizationNote}</p>}
-                      {order.personalMessage && <p>💬 "{order.personalMessage}"</p>}
-                    </div>
-                  )}
-
-                  {order.urgent && <p className="mt-2 text-xs font-bold text-red-600">🚨 URGENT ORDER</p>}
-                </div>
-
-                {/* Status Control */}
-                <div className="flex flex-col gap-2">
-                  <select
-                    value={order.status}
-                    onChange={(e) => updateOrderStatus(order._id, e.target.value)}
-                    className="rounded-md border border-sand bg-white px-3 py-2 text-sm font-medium text-charcoal"
-                  >
-                    <option value="PENDING">Pending</option>
-                    <option value="CONFIRMED">Confirmed</option>
-                    <option value="PREPARING">Preparing</option>
-                    <option value="READY">Ready</option>
-                    <option value="DELIVERED">Delivered</option>
-                    <option value="CANCELLED">Cancel</option>
-                  </select>
-                </div>
-              </div>
-            </div>
+            <AdminOrderCard
+              key={order.id}
+              order={order}
+              nameLookup={names}
+              saving={saving[order.id]}
+              error={errors[order.id]}
+              onStatusChange={updateOrderStatus}
+            />
           ))}
         </div>
       )}

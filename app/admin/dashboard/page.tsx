@@ -5,16 +5,10 @@ import { useRouter } from "next/navigation";
 import PasswordInput from "@/components/PasswordInput";
 import { useSession, signOut } from "next-auth/react";
 import { Order, OrderStatus, Bouquet, ShopStatus } from "@/lib/types";
+import AdminOrderCard from "@/components/admin/AdminOrderCard";
+import { useOrderAlerts } from "@/components/admin/useOrderAlerts";
 
-const STATUS_OPTIONS: OrderStatus[] = [
-  "PENDING",
-  "CONFIRMED",
-  "PREPARING",
-  "READY",
-  "DELIVERED",
-  "CANCELLED",
-  "REJECTED",
-];
+const POLL_MS = 30_000; // how often the order list refreshes by itself
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -43,6 +37,16 @@ export default function AdminDashboardPage() {
   const [capacityInput, setCapacityInput] = useState("8");
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [openInput, setOpenInput] = useState("6");
+  const [closeInput, setCloseInput] = useState("22");
+
+  // Change my own password
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [pwMessage, setPwMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pwSaving, setPwSaving] = useState(false);
+
+  const { soundOn, toggleSound } = useOrderAlerts(orders, !loading);
 
   useEffect(() => {
     // Middleware already blocks unauthenticated requests to this route,
@@ -66,14 +70,7 @@ export default function AdminDashboardPage() {
         // Non-critical — order items will just show their raw id if this fails.
       });
 
-    fetch("/api/orders")
-      .then((res) => {
-        if (!res.ok) throw new Error("Unauthorized");
-        return res.json();
-      })
-      .then((data) => setOrders(data.orders || []))
-      .catch(() => setError("Could not load orders."))
-      .finally(() => setLoading(false));
+    refreshOrders(true);
 
     fetch("/api/shop-settings")
       .then((res) => res.json())
@@ -83,11 +80,42 @@ export default function AdminDashboardPage() {
           setCapacityPerHour(data.capacityPerHour);
           setCapacityInput(String(data.capacityPerHour));
         }
+        if (typeof data.openHour === "number") setOpenInput(String(data.openHour));
+        if (typeof data.closeHour === "number") setCloseInput(String(data.closeHour));
       })
       .catch(() => {
         // Non-critical — falls back to defaults already in state.
       });
   }, [authStatus, router]);
+
+  // Fetch the order list. The first call shows the loading state and any error;
+  // the automatic refreshes after that stay quiet so the screen doesn't flicker.
+  function refreshOrders(first = false) {
+    return fetch("/api/orders")
+      .then((res) => {
+        if (!res.ok) throw new Error("Unauthorized");
+        return res.json();
+      })
+      .then((data) => {
+        setOrders(data.orders || []);
+        setError(null);
+      })
+      .catch(() => {
+        if (first) setError("Could not load orders.");
+      })
+      .finally(() => {
+        if (first) setLoading(false);
+      });
+  }
+
+  // Keep the list fresh while this tab is open so new orders show up without a reload.
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") refreshOrders();
+    }, POLL_MS);
+    return () => clearInterval(id);
+  }, [authStatus]);
 
   async function handleStatusChange(orderId: string, newStatus: OrderStatus) {
     setSavingStatus((s) => ({ ...s, [orderId]: true }));
@@ -164,6 +192,49 @@ export default function AdminDashboardPage() {
       setSettingsError(err instanceof Error ? err.message : "Could not update capacity.");
     } finally {
       setSettingsSaving(false);
+    }
+  }
+
+  async function handleSetHours(e: React.FormEvent) {
+    e.preventDefault();
+    setSettingsSaving(true);
+    setSettingsError(null);
+    try {
+      const res = await fetch("/api/shop-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ openHour: Number(openInput), closeHour: Number(closeInput) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not update hours.");
+      setOpenInput(String(data.openHour));
+      setCloseInput(String(data.closeHour));
+    } catch (err) {
+      setSettingsError(err instanceof Error ? err.message : "Could not update hours.");
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPwSaving(true);
+    setPwMessage(null);
+    try {
+      const res = await fetch("/api/admins/me/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not change password.");
+      setPwMessage({ ok: true, text: "Password changed. Use the new one next time you log in." });
+      setCurrentPw("");
+      setNewPw("");
+    } catch (err) {
+      setPwMessage({ ok: false, text: err instanceof Error ? err.message : "Could not change password." });
+    } finally {
+      setPwSaving(false);
     }
   }
 
@@ -282,6 +353,45 @@ export default function AdminDashboardPage() {
           <span className="text-xs text-charcoal/50">Currently {capacityPerHour}/hour</span>
         </form>
 
+        <form onSubmit={handleSetHours} className="mt-4 flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+              Pickups from (hour, 0–23)
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={23}
+              value={openInput}
+              onChange={(e) => setOpenInput(e.target.value)}
+              className="mt-1 w-24 rounded-md border border-sand px-3 py-1.5"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+              Until (hour, 1–24)
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={24}
+              value={closeInput}
+              onChange={(e) => setCloseInput(e.target.value)}
+              className="mt-1 w-24 rounded-md border border-sand px-3 py-1.5"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={settingsSaving}
+            className="rounded-full border border-sand px-4 py-1.5 text-sm font-semibold text-charcoal hover:border-rose disabled:opacity-60"
+          >
+            Save hours
+          </button>
+          <span className="text-xs text-charcoal/50">
+            Customers can only pick pickup times inside these hours (Kathmandu time).
+          </span>
+        </form>
+
         {settingsError && <p className="mt-3 text-sm text-rose-dark">{settingsError}</p>}
       </div>
 
@@ -305,7 +415,20 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="mt-8">
-        <h2 className="font-display text-xl italic text-charcoal">Orders</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-xl italic text-charcoal">Orders</h2>
+          <button
+            onClick={toggleSound}
+            className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${
+              soundOn ? "border-sage bg-sage-light text-sage-dark" : "border-sand text-charcoal/70 hover:border-rose"
+            }`}
+          >
+            {soundOn ? "🔔 New-order sound: on" : "🔕 New-order sound: off"}
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-charcoal/50">
+          This list refreshes by itself every 30 seconds. Turn sound on once to hear a chime when a new order arrives.
+        </p>
 
         {loading && <p className="mt-4 text-sm text-charcoal/60">Loading...</p>}
         {error && <p className="mt-4 text-sm text-rose-dark">{error}</p>}
@@ -316,66 +439,46 @@ export default function AdminDashboardPage() {
 
         <div className="mt-4 space-y-3">
           {orders.map((order) => (
-            <div key={order.id} className="rounded-card border border-sand bg-white p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="font-semibold text-charcoal">
-                    #{order.orderNumber} — {order.customerName}
-                  </p>
-                  <p className="text-sm text-charcoal/60">
-                    {order.phone} · {order.date} {order.time} · {order.meetingLocation}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={order.status}
-                    onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
-                    disabled={savingStatus[order.id]}
-                    className="rounded-md border border-sand px-2 py-1 text-sm disabled:opacity-60"
-                  >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  {savingStatus[order.id] && <span className="text-xs text-charcoal/40">Saving…</span>}
-                </div>
-              </div>
-              {statusError[order.id] && (
-                <p className="mt-1 text-xs text-rose-dark">{statusError[order.id]}</p>
-              )}
-
-              <ul className="mt-2 text-sm text-charcoal/70">
-                {order.items.map((item) => (
-                  <li key={item.bouquetId}>
-                    {bouquetNames[item.bouquetId] || item.bouquetId} × {item.quantity}
-                  </li>
-                ))}
-              </ul>
-
-              {order.customizationNote && (
-                <p className="mt-1 text-sm italic text-charcoal/60">
-                  Customization: {order.customizationNote}
-                </p>
-              )}
-              {order.personalMessage && (
-                <p className="mt-1 text-sm italic text-charcoal/60">
-                  Message: {order.personalMessage}
-                </p>
-              )}
-
-              <p className="mt-2 font-mono text-sm font-bold text-rose-dark">
-                Rs. {order.total.toLocaleString("en-IN")}
-              </p>
-
-              <button
-                onClick={() => handleDeleteOrder(order.id)}
-                className="mt-2 text-xs text-charcoal/40 hover:text-rose-dark hover:underline"
-              >
-                Remove order
-              </button>
-            </div>
+            <AdminOrderCard
+              key={order.id}
+              order={order}
+              nameLookup={bouquetNames}
+              saving={savingStatus[order.id]}
+              error={statusError[order.id]}
+              onStatusChange={handleStatusChange}
+              onDelete={handleDeleteOrder}
+            />
           ))}
         </div>
+      </div>
+
+      <div className="mt-10">
+        <h2 className="font-display text-xl italic text-charcoal">Your account</h2>
+        <p className="mt-1 text-sm text-charcoal/60">
+          Change your own password. (If you forget it, the super admin can set a new one from Manage admins.)
+        </p>
+        <form onSubmit={handleChangePassword} className="mt-4 rounded-card border border-sand bg-white p-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">Current password</label>
+              <PasswordInput value={currentPw} onChange={setCurrentPw} required autoComplete="current-password" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">New password</label>
+              <PasswordInput value={newPw} onChange={setNewPw} required minLength={8} autoComplete="new-password" />
+            </div>
+          </div>
+          {pwMessage && (
+            <p className={`mt-3 text-sm ${pwMessage.ok ? "text-green-700" : "text-rose-dark"}`}>{pwMessage.text}</p>
+          )}
+          <button
+            type="submit"
+            disabled={pwSaving}
+            className="mt-4 rounded-full bg-charcoal px-6 py-2.5 text-sm font-semibold text-ivory hover:bg-charcoal/80 disabled:opacity-60"
+          >
+            {pwSaving ? "Saving…" : "Change password"}
+          </button>
+        </form>
       </div>
 
       <div className="mt-10">

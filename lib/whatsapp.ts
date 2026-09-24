@@ -1,6 +1,7 @@
 // lib/whatsapp.ts - WhatsApp notification service using Twilio
 
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
+import { siteUrl } from "@/lib/site";
 import User from "@/models/User";
 
 interface WhatsAppNotificationPayload {
@@ -12,7 +13,7 @@ interface WhatsAppNotificationPayload {
   location: string;
   total: number;
   urgent: boolean;
-  items: Array<{ bouquetId: string; quantity: number }>;
+  items: Array<{ bouquetId: string; quantity: number; name?: string }>;
 }
 
 export async function sendWhatsAppNotificationToAdmins(
@@ -59,7 +60,7 @@ export async function sendWhatsAppNotificationToAdmins(
 function formatOrderMessage(order: WhatsAppNotificationPayload): string {
   const urgentEmoji = order.urgent ? "🚨 *URGENT* " : "";
   const itemsList = order.items
-    .map((i) => `• Bouquet ${i.bouquetId} ×${i.quantity}`)
+    .map((i) => `• ${i.name || `Bouquet ${i.bouquetId}`} ×${i.quantity}`)
     .join("\n");
 
   return `${urgentEmoji}NEW ORDER 🌹
@@ -76,7 +77,7 @@ ${itemsList}
 
 *Total:* Rs. ${order.total}
 
-👉 Manage: https://tiaflowershop.online/admin/orders`;
+👉 Manage: ${siteUrl}/admin/orders`;
 }
 
 async function sendWhatsAppMessage(to: string, message: string) {
@@ -91,21 +92,26 @@ async function sendWhatsAppMessage(to: string, message: string) {
       return;
     }
 
-    // Format numbers for Twilio
-    const fromNumber = `whatsapp:${whatsappNumber}`;
-    const toNumber = `whatsapp:${to}`;
-
-    // Use Twilio SDK
-    const twilio = require("twilio");
-    const client = twilio(accountSid, authToken);
-
-    const result = await client.messages.create({
-      body: message,
-      from: fromNumber,
-      to: toNumber,
+    // Twilio's REST API called directly with fetch — no extra npm package needed.
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        From: `whatsapp:${whatsappNumber}`,
+        To: `whatsapp:${to}`,
+        Body: message,
+      }),
     });
 
-    console.log(`[WhatsApp] Message sent (SID: ${result.sid})`);
+    if (!res.ok) {
+      // Log Twilio's status only — the body could echo the message text.
+      console.error(`[WhatsApp] Twilio rejected the message (HTTP ${res.status})`);
+      return;
+    }
+    console.log("[WhatsApp] Order notification sent");
   } catch (error) {
     console.error("[WhatsApp] Failed to send message:", error);
     // Don't throw - notifications are not critical

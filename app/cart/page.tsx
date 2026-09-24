@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/CartProvider";
+import { useLang } from "@/components/LanguageProvider";
+import { leadTimeText } from "@/lib/i18n";
 import { Bouquet } from "@/lib/types";
 
 export default function CartPage() {
   const router = useRouter();
+  const { t, lang } = useLang();
   const { items, hydrated, removeItem, setQuantity } = useCart();
   const [bouquets, setBouquets] = useState<Bouquet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,18 +34,18 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="font-display text-3xl italic text-charcoal">Your cart</h1>
+      <h1 className="font-display text-3xl italic text-charcoal">{t("cart.title")}</h1>
 
-      {(!hydrated || loading) && <p className="mt-6 text-sm text-charcoal/60">Loading…</p>}
+      {(!hydrated || loading) && <p className="mt-6 text-sm text-charcoal/60">{t("cart.loading")}</p>}
 
       {isEmpty && (
         <div className="mt-8 rounded-card border border-sand bg-white p-8 text-center">
-          <p className="text-charcoal/70">Your cart is empty.</p>
+          <p className="text-charcoal/70">{t("cart.empty")}</p>
           <Link
             href="/bouquets"
             className="mt-4 inline-block rounded-full bg-rose px-6 py-2.5 text-sm font-semibold text-ivory hover:bg-rose-dark"
           >
-            Browse bouquets
+            {t("cart.browse")}
           </Link>
         </div>
       )}
@@ -63,6 +66,14 @@ export default function CartPage() {
                   <p className="font-mono text-sm text-charcoal/60">
                     Rs. {bouquet.price.toLocaleString("en-IN")}
                   </p>
+                  {!bouquet.available && (
+                    <p className="mt-1 text-xs font-semibold text-rose-dark">{t("order.itemUnavailable")}</p>
+                  )}
+                  {bouquet.available && (bouquet.leadTimeHours || 0) > 0 && (
+                    <p className="mt-1 text-xs text-amber-800">
+                      ⏰ {t("detail.leadNotice", { time: leadTimeText(lang, bouquet.leadTimeHours || 0) })}
+                    </p>
+                  )}
                 </div>
                 <input
                   type="number"
@@ -70,11 +81,11 @@ export default function CartPage() {
                   value={quantity}
                   onChange={(e) => setQuantity(bouquetId, Number(e.target.value))}
                   className="w-16 rounded-md border border-sand px-2 py-1 text-center"
-                  aria-label={`Quantity for ${bouquet.name}`}
+                  aria-label={`${t("order.quantityFor")} ${bouquet.name}`}
                 />
                 <button
                   onClick={() => removeItem(bouquetId)}
-                  aria-label={`Remove ${bouquet.name}`}
+                  aria-label={`${t("order.remove")} ${bouquet.name}`}
                   className="text-charcoal/40 hover:text-rose-dark"
                 >
                   ✕
@@ -84,12 +95,12 @@ export default function CartPage() {
           </div>
 
           <Link href="/bouquets" className="mt-4 inline-block text-sm text-rose-dark hover:underline">
-            + Add more bouquets
+            {t("order.addMore")}
           </Link>
 
           <div className="mt-6 rounded-card border border-sand bg-white p-4">
             <div className="flex items-center justify-between">
-              <span className="font-medium text-charcoal">Total</span>
+              <span className="font-medium text-charcoal">{t("order.total")}</span>
               <span className="font-mono text-lg font-bold text-rose-dark">
                 Rs. {total.toLocaleString("en-IN")}
               </span>
@@ -100,7 +111,7 @@ export default function CartPage() {
             onClick={() => router.push("/order")}
             className="mt-4 w-full rounded-full bg-rose px-6 py-3 text-sm font-semibold text-ivory transition hover:bg-rose-dark"
           >
-            Continue to order details
+            {t("cart.continue")}
           </button>
         </>
       )}
