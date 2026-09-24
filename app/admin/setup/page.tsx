@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import PasswordInput from "@/components/PasswordInput";
 
 /**
  * Visit this once, right after your first deploy with MONGODB_URI
@@ -126,25 +127,12 @@ export default function AdminSetupPage() {
         <label className="mt-3 block text-xs font-semibold uppercase tracking-wide text-charcoal/60">
           Password
         </label>
-        <input
-          type="password"
-          required
-          minLength={8}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-        />
+        <PasswordInput value={password} onChange={setPassword} required minLength={8} autoComplete="new-password" />
 
         <label className="mt-3 block text-xs font-semibold uppercase tracking-wide text-charcoal/60">
           Confirm password
         </label>
-        <input
-          type="password"
-          required
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-        />
+        <PasswordInput value={confirm} onChange={setConfirm} required autoComplete="new-password" />
 
         {error && <p className="mt-3 text-sm text-rose-dark">{error}</p>}
 

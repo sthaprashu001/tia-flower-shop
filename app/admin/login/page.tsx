@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import PasswordInput from "@/components/PasswordInput";
 
 /**
  * Real admin login (Phase 3) — replaces the old shared ADMIN_API_KEY.
@@ -58,13 +59,7 @@ export default function AdminLoginPage() {
         <label className="mt-3 block text-xs font-semibold uppercase tracking-wide text-charcoal/60">
           Password
         </label>
-        <input
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-        />
+        <PasswordInput value={password} onChange={setPassword} required autoComplete="current-password" />
 
         {error && <p className="mt-2 text-sm text-rose-dark">{error}</p>}
 
