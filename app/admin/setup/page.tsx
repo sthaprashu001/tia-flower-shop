@@ -21,6 +21,7 @@ export default function AdminSetupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [setupToken, setSetupToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -44,7 +45,7 @@ export default function AdminSetupPage() {
       const res = await fetch("/api/admin/setup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, setupToken }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not create account.");
@@ -90,6 +91,18 @@ export default function AdminSetupPage() {
         </p>
 
         <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+          Setup token
+        </label>
+        <input
+          type="password"
+          autoComplete="off"
+          value={setupToken}
+          onChange={(e) => setSetupToken(e.target.value)}
+          placeholder="The SETUP_TOKEN value from your environment"
+          className="mt-1 w-full rounded-md border border-sand px-3 py-2"
+        />
+
+        <label className="mt-3 block text-xs font-semibold uppercase tracking-wide text-charcoal/60">
           Your name (optional)
         </label>
         <input

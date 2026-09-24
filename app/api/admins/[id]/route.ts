@@ -1,51 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireSuperAdmin } from "@/lib/guards";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
+import { cleanText, isObjectId, isWhatsappNumber } from "@/lib/validation";
 import User from "@/models/User";
-import bcrypt from "bcryptjs";
 
-// PATCH - Update admin details
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// PATCH - Update admin details (super admin only)
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireSuperAdmin(req);
+    if ("error" in auth) return auth.error;
 
     if (!isDatabaseConfigured()) {
-      return NextResponse.json(
-        { error: "Database not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+    }
+    if (!isObjectId(params.id)) {
+      return NextResponse.json({ error: "Admin not found" }, { status: 404 });
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+    }
+
+    // Whitelist + type-check every field; role and email can never be changed here.
+    const updates: Record<string, unknown> = {};
+    if (body.name !== undefined) updates.name = cleanText(body.name, 100);
+    if (body.whatsappNumber !== undefined) {
+      const wa = cleanText(body.whatsappNumber, 20);
+      if (wa && !isWhatsappNumber(wa)) {
+        return NextResponse.json(
+          { error: "WhatsApp number must be in international format, e.g. +9779800000000" },
+          { status: 400 }
+        );
+      }
+      updates.whatsappNumber = wa;
+    }
+    if (body.notifyOrders !== undefined) {
+      if (typeof body.notifyOrders !== "boolean") {
+        return NextResponse.json({ error: "notifyOrders must be true or false." }, { status: 400 });
+      }
+      updates.notifyOrders = body.notifyOrders;
+    }
+    if (body.isActive !== undefined) {
+      if (typeof body.isActive !== "boolean") {
+        return NextResponse.json({ error: "isActive must be true or false." }, { status: 400 });
+      }
+      if (body.isActive === false && auth.user.id === params.id) {
+        return NextResponse.json({ error: "You cannot deactivate your own account." }, { status: 400 });
+      }
+      updates.isActive = body.isActive;
     }
 
     await connectToDatabase();
-
-    // Check if user is SUPER_ADMIN
-    const currentUser = await User.findOne({ email: session.user?.email });
-    if (currentUser?.role !== "SUPER_ADMIN") {
-      return NextResponse.json(
-        { error: "Only super admin can update admins" },
-        { status: 403 }
-      );
-    }
-
-    const body = await req.json();
-    const { name, whatsappNumber, notifyOrders, isActive } = body;
-
-    const updates: any = {};
-    if (name !== undefined) updates.name = name.trim();
-    if (whatsappNumber !== undefined) updates.whatsappNumber = whatsappNumber.trim();
-    if (notifyOrders !== undefined) updates.notifyOrders = notifyOrders;
-    if (isActive !== undefined) updates.isActive = isActive;
-
-    const admin = await User.findByIdAndUpdate(params.id, updates, {
-      new: true,
-    }).select("-passwordHash");
+    const admin = await User.findByIdAndUpdate(params.id, { $set: updates }, { new: true }).select("-passwordHash");
 
     if (!admin) {
       return NextResponse.json({ error: "Admin not found" }, { status: 404 });
@@ -65,50 +74,29 @@ export async function PATCH(
     });
   } catch (err) {
     console.error("Failed to update admin:", err);
-    return NextResponse.json(
-      { error: "Could not update admin" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Could not update admin" }, { status: 500 });
   }
 }
 
-// DELETE - Remove admin
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// DELETE - Remove admin (super admin only)
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireSuperAdmin(req);
+    if ("error" in auth) return auth.error;
 
     if (!isDatabaseConfigured()) {
-      return NextResponse.json(
-        { error: "Database not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Database not configured" }, { status: 500 });
     }
-
-    await connectToDatabase();
-
-    // Check if user is SUPER_ADMIN
-    const currentUser = await User.findOne({ email: session.user?.email });
-    if (currentUser?.role !== "SUPER_ADMIN") {
-      return NextResponse.json(
-        { error: "Only super admin can delete admins" },
-        { status: 403 }
-      );
+    if (!isObjectId(params.id)) {
+      return NextResponse.json({ error: "Admin not found" }, { status: 404 });
     }
 
     // Prevent deleting self
-    if (String(currentUser._id) === params.id) {
-      return NextResponse.json(
-        { error: "Cannot delete your own admin account" },
-        { status: 400 }
-      );
+    if (auth.user.id === params.id) {
+      return NextResponse.json({ error: "Cannot delete your own admin account" }, { status: 400 });
     }
 
+    await connectToDatabase();
     const admin = await User.findByIdAndDelete(params.id);
 
     if (!admin) {
@@ -118,9 +106,6 @@ export async function DELETE(
     return NextResponse.json({ message: "Admin deleted successfully" });
   } catch (err) {
     console.error("Failed to delete admin:", err);
-    return NextResponse.json(
-      { error: "Could not delete admin" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Could not delete admin" }, { status: 500 });
   }
 }

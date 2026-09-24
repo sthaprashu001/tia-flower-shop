@@ -141,7 +141,7 @@ export default function RootLayout({
       <body className="font-body flex min-h-screen flex-col">
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
         />
         <SessionProviderWrapper>
           <CartProvider>

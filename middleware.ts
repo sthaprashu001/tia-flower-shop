@@ -1,7 +1,9 @@
 import { withAuth } from "next-auth/middleware";
 
-// Only /admin/dashboard and /admin/products require a real session.
-// /admin/login and /admin/setup must stay public — that's how you get in.
+// Every /admin page requires a real session except the two entry points:
+// /admin/login (how you get in) and /admin/setup (one-time first account).
+// The API routes check the session again on the server — this middleware only
+// keeps signed-out visitors from loading the admin screens at all.
 //
 // This can't import authOptions from lib/auth.ts directly — that file
 // pulls in mongoose/bcrypt, which don't run on the Edge middleware
@@ -13,6 +15,6 @@ export default withAuth({
 });
 
 export const config = {
-  matcher: ["/admin/dashboard/:path*", "/admin/products/:path*"],
+  // Matches /admin, /admin/orders, /admin/admins, ... but not /admin/login or /admin/setup.
+  matcher: ["/admin/((?!login|setup).*)"],
 };
-

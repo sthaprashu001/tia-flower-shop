@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
+import { clientIp, rateLimit, tooManyRequests } from "@/lib/rateLimit";
+import { isPhone } from "@/lib/validation";
 import Order from "@/models/Order";
 
 // GET - Track order by order number and phone (public endpoint)
 export async function GET(req: NextRequest) {
   try {
+    // Public lookup: limit guessing of order-number/phone pairs.
+    const limit = rateLimit(`track:${clientIp(req.headers)}`, 10, 10 * 60_000);
+    if (!limit.ok) return tooManyRequests(limit.retryAfter);
+
     const { searchParams } = new URL(req.url);
     const orderNumber = searchParams.get("orderNumber");
     const phone = searchParams.get("phone");
@@ -14,6 +20,10 @@ export async function GET(req: NextRequest) {
         { error: "Order number and phone are required" },
         { status: 400 }
       );
+    }
+    if (!/^TIA\d{4,8}$/i.test(orderNumber.trim()) || !isPhone(phone)) {
+      // Same answer as a real miss, so the format check leaks nothing.
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
     if (!isDatabaseConfigured()) {

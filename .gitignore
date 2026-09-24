@@ -1,4 +1,16 @@
-.env.local
+# dependencies / build output
 node_modules/
 .next/
 out/
+*.tsbuildinfo
+
+# secrets — never commit any real env file (only .env.example is tracked)
+.env
+.env.*
+!.env.example
+
+# platform / OS / editor
+.vercel/
+.DS_Store
+*.pem
+npm-debug.log*

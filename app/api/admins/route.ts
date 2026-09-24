@@ -1,35 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireSuperAdmin } from "@/lib/guards";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
+import { generateTempPassword, hashPassword } from "@/lib/password";
+import { cleanText, isEmail, isWhatsappNumber } from "@/lib/validation";
 import User from "@/models/User";
-import bcrypt from "bcryptjs";
 
-// GET - Get all admins
+// GET - Get all admins (super admin only)
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireSuperAdmin(req);
+    if ("error" in auth) return auth.error;
 
     if (!isDatabaseConfigured()) {
-      return NextResponse.json(
-        { error: "Database not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Database not configured" }, { status: 500 });
     }
 
     await connectToDatabase();
-
-    // Check if user is SUPER_ADMIN
-    const currentUser = await User.findOne({ email: session.user?.email });
-    if (currentUser?.role !== "SUPER_ADMIN") {
-      return NextResponse.json(
-        { error: "Only super admin can manage admins" },
-        { status: 403 }
-      );
-    }
 
     const admins = await User.find({ role: { $in: ["SUPER_ADMIN", "ADMIN"] } })
       .select("-passwordHash")
@@ -50,68 +36,58 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("Failed to fetch admins:", err);
-    return NextResponse.json(
-      { error: "Could not fetch admins" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Could not fetch admins" }, { status: 500 });
   }
 }
 
-// POST - Add new admin
+// POST - Add new admin (super admin only)
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireSuperAdmin(req);
+    if ("error" in auth) return auth.error;
 
     if (!isDatabaseConfigured()) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+    }
+
+    const email = typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
+    if (!isEmail(email)) {
+      return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
+    }
+
+    const whatsappNumber = cleanText(body.whatsappNumber, 20);
+    if (whatsappNumber && !isWhatsappNumber(whatsappNumber)) {
       return NextResponse.json(
-        { error: "Database not configured" },
-        { status: 500 }
+        { error: "WhatsApp number must be in international format, e.g. +9779800000000" },
+        { status: 400 }
       );
     }
 
     await connectToDatabase();
 
-    // Check if user is SUPER_ADMIN
-    const currentUser = await User.findOne({ email: session.user?.email });
-    if (currentUser?.role !== "SUPER_ADMIN") {
-      return NextResponse.json(
-        { error: "Only super admin can add admins" },
-        { status: 403 }
-      );
-    }
-
-    const body = await req.json();
-    const { email, name, whatsappNumber, notifyOrders } = body;
-
-    if (!email?.trim()) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
-    }
-
-    // Check if email already exists
-    const existingUser = await User.findOne({
-      email: email.toLowerCase().trim(),
-    });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return NextResponse.json(
-        { error: "Admin with this email already exists" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Admin with this email already exists" }, { status: 400 });
     }
 
-    // Generate temporary password
-    const tempPassword = Math.random().toString(36).substring(2, 10);
-    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    // Cryptographically random temporary password
+    const tempPassword = generateTempPassword();
+    const passwordHash = await hashPassword(tempPassword);
 
     const newAdmin = await User.create({
-      email: email.toLowerCase().trim(),
-      name: name?.trim() || "",
+      email,
+      name: cleanText(body.name, 100),
       passwordHash,
       role: "ADMIN",
-      whatsappNumber: whatsappNumber?.trim() || "",
-      notifyOrders: notifyOrders !== false,
+      whatsappNumber,
+      notifyOrders: body.notifyOrders !== false,
       isActive: true,
     });
 
@@ -127,16 +103,13 @@ export async function POST(req: NextRequest) {
           isActive: newAdmin.isActive,
           notifyOrders: newAdmin.notifyOrders,
         },
-        tempPassword, // Send this to admin (via email in production)
+        tempPassword, // Shown once — share it with them privately
         message: "Admin created. Share the temp password with them.",
       },
       { status: 201 }
     );
   } catch (err) {
     console.error("Failed to create admin:", err);
-    return NextResponse.json(
-      { error: "Could not create admin" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Could not create admin" }, { status: 500 });
   }
 }

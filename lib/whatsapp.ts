@@ -86,11 +86,8 @@ async function sendWhatsAppMessage(to: string, message: string) {
     const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER;
 
     if (!accountSid || !authToken || !whatsappNumber) {
-      console.log(
-        "[WhatsApp] Twilio credentials not configured, logging instead:"
-      );
-      console.log(`To: ${to}`);
-      console.log(`Message: ${message}`);
+      // Never log the recipient number or message body (customer details).
+      console.log("[WhatsApp] Twilio credentials not configured, message not sent.");
       return;
     }
 
@@ -108,9 +105,9 @@ async function sendWhatsAppMessage(to: string, message: string) {
       to: toNumber,
     });
 
-    console.log(`[WhatsApp] Message sent to ${to} (SID: ${result.sid})`);
+    console.log(`[WhatsApp] Message sent (SID: ${result.sid})`);
   } catch (error) {
-    console.error(`[WhatsApp] Failed to send message to ${to}:`, error);
+    console.error("[WhatsApp] Failed to send message:", error);
     // Don't throw - notifications are not critical
   }
 }
