@@ -15,7 +15,6 @@ interface Order {
   time: string;
   meetingLocation: string;
   customizationNote?: string;
-  personalMessage?: string;
   urgent: boolean;
   total: number;
   status: "DELIVERED" | "CANCELLED" | "REJECTED";

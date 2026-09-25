@@ -42,7 +42,6 @@ export interface OrderInput {
   time: string; // e.g. 18:30
   meetingLocation: string;
   customizationNote?: string;
-  personalMessage?: string;
   urgent?: boolean;
 }
 

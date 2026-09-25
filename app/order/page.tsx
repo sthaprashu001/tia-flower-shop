@@ -40,7 +40,6 @@ function OrderForm() {
   const [time, setTime] = useState("");
   const [meetingLocation, setMeetingLocation] = useState("");
   const [customizationNote, setCustomizationNote] = useState("");
-  const [personalMessage, setPersonalMessage] = useState("");
   const [showExtras, setShowExtras] = useState(false);
   const [remember, setRemember] = useState(true);
   const [hasSaved, setHasSaved] = useState(false);
@@ -113,14 +112,6 @@ function OrderForm() {
   const cartEmpty = hydrated && !loadingBouquets && lines.length === 0;
   const unavailable = lines.filter((l) => !l.bouquet.available);
   const hasCustomizable = lines.some((l) => l.bouquet.customizable);
-  // Card message is a perk for pricier bouquets — free with any single bouquet over Rs. 900.
-  const CARD_MESSAGE_MIN_PRICE = 900;
-  const canAddCardMessage = lines.some((l) => l.bouquet.price > CARD_MESSAGE_MIN_PRICE);
-
-  useEffect(() => {
-    if (!canAddCardMessage && personalMessage) setPersonalMessage("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canAddCardMessage]);
 
   // Longest "order at least X before" among the items in the cart.
   const leadHours = maxLeadHours(lines.map((l) => l.bouquet));
@@ -229,7 +220,6 @@ function OrderForm() {
           time,
           meetingLocation,
           customizationNote,
-          personalMessage,
         }),
       });
 
@@ -485,42 +475,20 @@ function OrderForm() {
               <span className="text-sm text-rose-dark">{showExtras ? t("order.hide") : t("order.show")}</span>
             </button>
             {showExtras && (
-              <>
-                <div>
-                  <label className="text-sm font-medium text-charcoal" htmlFor="customizationNote">
-                    {t("order.specialRequests")}
-                  </label>
-                  <textarea
-                    id="customizationNote"
-                    value={customizationNote}
-                    maxLength={500}
-                    onChange={(e) => setCustomizationNote(e.target.value)}
-                    rows={3}
-                    placeholder={t("order.specialPlaceholder")}
-                    className={input}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-charcoal" htmlFor="personalMessage">
-                    {t("order.cardMessage")}
-                  </label>
-                  {canAddCardMessage ? (
-                    <textarea
-                      id="personalMessage"
-                      value={personalMessage}
-                      maxLength={300}
-                      onChange={(e) => setPersonalMessage(e.target.value)}
-                      rows={2}
-                      placeholder={t("order.messagePlaceholder")}
-                      className={input}
-                    />
-                  ) : (
-                    <p className="mt-1 rounded-md border border-dashed border-sand bg-sand/10 px-3 py-2 text-sm text-charcoal/50">
-                      {t("order.cardMessageLocked")}
-                    </p>
-                  )}
-                </div>
-              </>
+              <div>
+                <label className="text-sm font-medium text-charcoal" htmlFor="customizationNote">
+                  {t("order.specialRequests")}
+                </label>
+                <textarea
+                  id="customizationNote"
+                  value={customizationNote}
+                  maxLength={500}
+                  onChange={(e) => setCustomizationNote(e.target.value)}
+                  rows={3}
+                  placeholder=""
+                  className={input}
+                />
+              </div>
             )}
           </fieldset>
 

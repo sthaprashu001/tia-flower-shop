@@ -18,7 +18,6 @@ export function orderSummaryText(order: Order, lookup: Record<string, string>): 
     ...order.items.map((i) => `- ${itemName(i, lookup)} x${i.quantity}`),
   ];
   if (order.customizationNote) lines.push(`Requests: ${order.customizationNote}`);
-  if (order.personalMessage) lines.push(`Card message: ${order.personalMessage}`);
   lines.push(`Total: Rs. ${order.total.toLocaleString("en-IN")}`);
   return lines.join("\n");
 }
@@ -57,7 +56,6 @@ ${order.urgent ? '<p class="urgent">URGENT ORDER</p>' : ""}
 </dl>
 <table>${rows}</table>
 ${order.customizationNote ? `<div class="note"><strong>Requests:</strong> ${esc(order.customizationNote)}</div>` : ""}
-${order.personalMessage ? `<div class="note"><strong>Card message:</strong> ${esc(order.personalMessage)}</div>` : ""}
 <p class="total">Total: Rs. ${order.total.toLocaleString("en-IN")}</p>
 </body></html>`;
 }
