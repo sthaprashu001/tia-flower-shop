@@ -21,42 +21,28 @@ const STEPS = [
 export default async function HomePage() {
   const bouquets = await getAllBouquets();
 
-  // Get featured bouquets only (up to 4) - admin selects these
-  const featuredBouquets = bouquets
-    .filter((b) => b.featured === true && b.category === "Bouquets")
+  // Homepage photo stack, at the very top of the page (what the customer calls
+  // "the scattered cards below Ask on WhatsApp"). Admins control this from
+  // /admin/products: each bouquet has one "Homepage stack position" number
+  // (1-10). Items with a position show first, lowest number first, up to 10,
+  // from any category — there's no fixed split between bouquets/khata/flags.
+  // If no admin has set a position yet, a sensible default mix is shown so
+  // the homepage is never empty on a fresh install.
+  const MAX_COLLAGE_ITEMS = 10;
+  const positioned = bouquets
+    .filter((b) => b.available && b.featured && (b.featuredOrder || 0) > 0)
     .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0))
-    .slice(0, 4);
+    .slice(0, MAX_COLLAGE_ITEMS);
 
-  // Get featured khata (up to 2) - if none featured, show first 2 available
-  let featuredKhata = bouquets
-    .filter((b) => b.featured === true && b.category === "Khata")
-    .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0))
-    .slice(0, 2);
-
-  if (featuredKhata.length === 0) {
-    featuredKhata = bouquets.filter((b) => b.category === "Khata").slice(0, 2);
+  let collage = positioned;
+  if (collage.length === 0) {
+    // Default mix, only used until any admin sets a stack position: a few
+    // bouquets plus one khata and one flag, so all categories are represented.
+    const defaultBouquets = bouquets.filter((b) => b.available && b.category === "Bouquets").slice(0, 4);
+    const defaultKhata = bouquets.filter((b) => b.available && b.category === "Khata").slice(0, 2);
+    const defaultFlag = bouquets.filter((b) => b.available && b.category === "Flags").slice(0, 1);
+    collage = [...defaultKhata, ...defaultBouquets, ...defaultFlag];
   }
-
-  // Get featured flag (1 item) - if none featured, show first available
-  let featuredFlag = bouquets
-    .filter((b) => b.featured === true && b.category === "Flags")
-    .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0))
-    .slice(0, 1);
-
-  if (featuredFlag.length === 0) {
-    featuredFlag = bouquets.filter((b) => b.category === "Flags").slice(0, 1);
-  }
-
-  // Build collage: 2 khata + 4 bouquets + 1 flag = 7 items
-  const collage = [
-    featuredKhata[0],
-    featuredKhata[1],
-    featuredBouquets[0],
-    featuredBouquets[1],
-    featuredBouquets[2],
-    featuredBouquets[3],
-    featuredFlag[0],
-  ].filter(Boolean);
 
   // "Today's items": the admin ticks "Show in Today's items" per bouquet, in any
   // category (see /admin/products). Picked items show first, in category order
@@ -107,36 +93,21 @@ export default async function HomePage() {
           </div>
 
           {collage.length > 0 ? (
-            <div className="relative mx-auto w-full max-w-sm lg:max-w-none h-64 sm:h-80 lg:h-96">
+            <div className="mx-auto mt-2 flex max-w-sm flex-wrap items-center justify-center py-4 lg:max-w-xl">
               {collage.map((item, idx) => {
-                // Positions for overlapping tossed card effect
-                const mobilePositions = [
-                  "left-2 top-0 -rotate-12 z-10",
-                  "left-12 top-2 rotate-6 z-20",
-                  "left-1/2 top-4 -translate-x-1/2 -rotate-2 z-30",
-                  "right-12 top-2 -rotate-6 z-20",
-                  "right-2 top-0 rotate-12 z-10",
-                  "left-1/4 bottom-4 rotate-3 z-15",
-                  "right-1/4 bottom-4 -rotate-3 z-15",
-                ];
-
-                const desktopPositions = [
-                  "left-0 top-8 -rotate-6 z-10",
-                  "left-1/4 top-2 rotate-3 z-20",
-                  "left-1/2 top-0 -translate-x-1/2 z-30",
-                  "right-1/4 top-2 -rotate-3 z-20",
-                  "right-0 top-8 rotate-6 z-10",
-                  "left-1/3 bottom-0 rotate-2 z-15",
-                  "right-1/3 bottom-0 -rotate-2 z-15",
-                ];
-
-                const position = mobilePositions[idx] || mobilePositions[0];
+                // Small deterministic wobble so the photos look like a loosely
+                // tossed pile, however many there are (1 to 10). Overlap comes
+                // from the negative left margin; later cards paint on top.
+                const rotations = ["-rotate-6", "rotate-3", "-rotate-2", "rotate-6", "-rotate-3", "rotate-2"];
+                const lifts = ["translate-y-0", "translate-y-3", "-translate-y-2", "translate-y-2", "-translate-y-3", "translate-y-1"];
+                const rotate = rotations[idx % rotations.length];
+                const lift = lifts[idx % lifts.length];
 
                 return (
                   <Link
                     key={item.id}
                     href={`/bouquets/${item.id}`}
-                    className={`absolute overflow-hidden rounded-lg shadow-md transition-all hover:shadow-xl hover:scale-105 h-40 w-32 sm:h-48 sm:w-40 lg:h-56 lg:w-44 ${position}`}
+                    className={`group relative -ml-6 h-40 w-32 shrink-0 overflow-hidden rounded-lg border-2 border-white shadow-md transition-transform hover:z-20 hover:scale-105 hover:shadow-xl first:ml-0 sm:h-48 sm:w-40 lg:h-56 lg:w-44 ${rotate} ${lift}`}
                   >
                     <Image
                       src={item.image}
@@ -147,14 +118,12 @@ export default async function HomePage() {
                       priority={idx < 3}
                     />
                     {/* Dark overlay on hover with category + name */}
-                    <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-end p-2">
-                      <div className="opacity-0 hover:opacity-100 transition-opacity">
-                        <p className="text-[10px] font-medium text-white/70 uppercase">
+                    <div className="absolute inset-0 flex items-end bg-black/0 p-2 transition-colors group-hover:bg-black/40">
+                      <div className="opacity-0 transition-opacity group-hover:opacity-100">
+                        <p className="text-[10px] font-medium uppercase text-white/70">
                           {item.category || "Bouquets"}
                         </p>
-                        <p className="text-xs font-semibold text-white line-clamp-2">
-                          {item.name}
-                        </p>
+                        <p className="line-clamp-2 text-xs font-semibold text-white">{item.name}</p>
                       </div>
                     </div>
                   </Link>
@@ -163,9 +132,7 @@ export default async function HomePage() {
             </div>
           ) : (
             <div className="mt-8 rounded-lg border border-sand/30 bg-sand/10 p-8 text-center">
-              <p className="text-sm text-charcoal/60">
-                Featured products loading...
-              </p>
+              <p className="text-sm text-charcoal/60">No bouquets to show yet — add one in the admin dashboard.</p>
             </div>
           )}
         </div>

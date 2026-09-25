@@ -201,7 +201,7 @@ export default function AdminProductsPage() {
       customizable: form.customizable,
       cost: form.cost ? Number(form.cost) : 0,
       category: form.category.trim() || "Bouquets",
-      featured: form.featured,
+      featured: form.featuredOrder > 0,
       featuredOrder: form.featuredOrder,
       leadTimeHours: leadHours,
       todayPick: form.todayPick,
@@ -453,40 +453,36 @@ export default function AdminProductsPage() {
             />
           </div>
 
-          <div>
+          <div className="sm:col-span-2 rounded-md border border-sand bg-sand/10 p-3">
             <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
-              Featured Order (Bouquets: 1-4, Khata: 5-6, Flag: 7)
+              Homepage photo stack — position (1–10)
             </label>
             <input
               type="number"
               min={0}
-              max={7}
+              max={10}
               value={form.featuredOrder}
               onChange={(e) => setForm((f) => ({ ...f, featuredOrder: parseInt(e.target.value) || 0 }))}
-              className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-              placeholder="0 = not featured (khata/flag auto-show first)"
+              className="mt-1 w-32 rounded-md border border-sand bg-white px-3 py-2"
+              placeholder="Blank = hidden"
             />
             <p className="mt-1 text-xs text-charcoal/50">
-              • Bouquets (1-4): You choose which appear. • Khata (5-6) & Flag (7): Always show (first if you don't select).
+              This is the pile of tossed photos at the very top of the homepage (above &quot;How ordering
+              works&quot;), on both phone and desktop. Set a number 1–10 to include this item — lower numbers
+              are placed first. Leave it at 0 to leave this item out. Works for any category (bouquets, khata,
+              flags), so you decide the exact mix. If no product has a number set, we show a default mix
+              automatically.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 pt-6">
-            <label className="flex items-center gap-2 text-sm text-charcoal">
-              <input
-                type="checkbox"
-                checked={form.featured}
-                onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked }))}
-              />
-              Show on homepage
-            </label>
+          <div className="flex flex-wrap items-center gap-4 pt-6">
             <label className="flex items-center gap-2 text-sm text-charcoal">
               <input
                 type="checkbox"
                 checked={form.todayPick}
                 onChange={(e) => setForm((f) => ({ ...f, todayPick: e.target.checked }))}
               />
-              Today&apos;s pick
+              Show in &quot;Today&apos;s items&quot; grid
             </label>
             <label className="flex items-center gap-2 text-sm text-charcoal">
               <input
@@ -505,6 +501,11 @@ export default function AdminProductsPage() {
               Customizable
             </label>
           </div>
+          <p className="mt-1 text-xs text-charcoal/50">
+            &quot;Today&apos;s items&quot; is a different section — the grid of bouquets further down the
+            homepage. If you don&apos;t pick at least 8 items across all categories, we automatically fill the
+            rest so the grid is never half-empty on mobile.
+          </p>
         </div>
 
         {formError && <p className="mt-3 text-sm text-rose-dark">{formError}</p>}
@@ -623,7 +624,7 @@ export default function AdminProductsPage() {
                   </span>
                   {p.featured && (
                     <span className="inline-block rounded-full bg-rose/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-rose-dark">
-                      Featured {p.featuredOrder && `(#${p.featuredOrder})`}
+                      Homepage stack {p.featuredOrder && `(#${p.featuredOrder})`}
                     </span>
                   )}
                 </div>
