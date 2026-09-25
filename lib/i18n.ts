@@ -145,8 +145,8 @@ export const dictionary: Record<string, Entry> = {
     ne: "सही ठाउँ हामी WhatsApp मा तपाईंसँग पक्का गर्नेछौं।",
   },
   "order.customize": {
-    en: "Add special requests or a card message (optional)",
-    ne: "विशेष अनुरोध वा कार्डको सन्देश थप्नुहोस् (ऐच्छिक)",
+    en: "Special requests (optional)",
+    ne: "विशेष अनुरोध (ऐच्छिक)",
   },
   "order.hide": { en: "Hide", ne: "लुकाउनुहोस्" },
   "order.show": { en: "Add", ne: "थप्नुहोस्" },
