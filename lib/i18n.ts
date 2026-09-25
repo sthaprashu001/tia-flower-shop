@@ -151,13 +151,6 @@ export const dictionary: Record<string, Entry> = {
   "order.hide": { en: "Hide", ne: "लुकाउनुहोस्" },
   "order.show": { en: "Add", ne: "थप्नुहोस्" },
   "order.specialRequests": { en: "Special requests", ne: "विशेष अनुरोध" },
-  "order.specialPlaceholder": {
-    en: "e.g. \"10 red roses, white wrapping, blue ribbon\"",
-    ne: "जस्तै: \"10 वटा रातो गुलाफ, सेतो र्‍यापिङ, निलो रिबन\"",
-  },
-  "order.cardMessage": { en: "Personal message (goes on the card)", ne: "व्यक्तिगत सन्देश (कार्डमा लेखिन्छ)" },
-  "order.messagePlaceholder": { en: "Welcome home! ❤️", ne: "घर फर्किएकोमा स्वागत छ! ❤️" },
-  "order.cardMessageLocked": { en: "Free with any bouquet over Rs. 900", ne: "रु. ९०० भन्दा माथिको कुनै पनि बुके सँग निःशुल्क" },
   "order.total": { en: "Total", ne: "जम्मा" },
   "order.paymentNote": {
     en: "Payment is arranged with you on WhatsApp after we confirm — cash or online payment, no gateway needed right now.",

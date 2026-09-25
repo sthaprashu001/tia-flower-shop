@@ -119,13 +119,6 @@ async function parseOrder(
   const meetingLocation = cleanText(b.meetingLocation, 200);
   if (!meetingLocation) return { error: "Meeting location near TIA is required." };
 
-  // Card message is a perk for pricier bouquets — free with any single bouquet
-  // over Rs. 900. Re-checked here (not just in the UI) using the server's own
-  // price lookup, so it can't be added by editing the request directly.
-  const CARD_MESSAGE_MIN_PRICE = 900;
-  const canAddCardMessage = items.some((item) => (item.unitPrice || 0) > CARD_MESSAGE_MIN_PRICE);
-  const personalMessage = canAddCardMessage ? cleanText(b.personalMessage, 300) : "";
-
   return {
     leadHours,
     data: {
@@ -136,7 +129,6 @@ async function parseOrder(
       time,
       meetingLocation,
       customizationNote: cleanText(b.customizationNote, 500),
-      personalMessage,
       urgent: b.urgent === true,
     },
   };
@@ -202,7 +194,6 @@ export async function POST(req: NextRequest) {
     time: input.time,
     meetingLocation: input.meetingLocation,
     customizationNote: input.customizationNote || "",
-    personalMessage: input.personalMessage || "",
     urgent: input.urgent,
     total,
     status: "PENDING",

@@ -20,7 +20,6 @@ const OrderSchema = new Schema(
     time: { type: String, required: true },
     meetingLocation: { type: String, required: true, maxlength: 200 },
     customizationNote: { type: String, default: "", maxlength: 500 },
-    personalMessage: { type: String, default: "", maxlength: 300 },
     urgent: { type: Boolean, default: false },
     total: { type: Number, required: true },
     status: {

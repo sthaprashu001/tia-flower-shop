@@ -59,7 +59,6 @@ export async function GET(req: NextRequest) {
         time: order.time,
         meetingLocation: order.meetingLocation,
         customizationNote: order.customizationNote,
-        personalMessage: order.personalMessage,
         urgent: order.urgent,
         total: order.total,
         status: order.status,

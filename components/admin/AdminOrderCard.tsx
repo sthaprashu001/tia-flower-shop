@@ -117,9 +117,6 @@ export default function AdminOrderCard({
       {order.customizationNote && (
         <p className="mt-1 text-sm italic text-charcoal/60">📝 {order.customizationNote}</p>
       )}
-      {order.personalMessage && (
-        <p className="mt-1 text-sm italic text-charcoal/60">💬 “{order.personalMessage}”</p>
-      )}
 
       <p className="mt-2 font-mono text-sm font-bold text-rose-dark">Rs. {order.total.toLocaleString("en-IN")}</p>
 

@@ -20,7 +20,6 @@ interface Order {
   time: string;
   meetingLocation: string;
   customizationNote?: string;
-  personalMessage?: string;
   urgent: boolean;
   total: number;
   status: "PENDING" | "CONFIRMED" | "PREPARING" | "READY" | "DELIVERED" | "CANCELLED" | "REJECTED";
@@ -197,19 +196,12 @@ export default function OrderStatusPage() {
                       </div>
 
                       {/* Notes */}
-                      {(order.customizationNote || order.personalMessage) && (
+                      {order.customizationNote && (
                         <div className="mt-4 rounded bg-sand/20 p-3 text-sm">
-                          {order.customizationNote && (
-                            <p>
-                              <span className="font-medium">Customization:</span>{" "}
-                              {order.customizationNote}
-                            </p>
-                          )}
-                          {order.personalMessage && (
-                            <p>
-                              <span className="font-medium">Message:</span> "{order.personalMessage}"
-                            </p>
-                          )}
+                          <p>
+                            <span className="font-medium">Customization:</span>{" "}
+                            {order.customizationNote}
+                          </p>
                         </div>
                       )}
 

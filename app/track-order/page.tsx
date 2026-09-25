@@ -16,7 +16,6 @@ interface Order {
   createdAt: string;
   items: Array<{ bouquetId: string; quantity: number }>;
   customizationNote?: string;
-  personalMessage?: string;
   urgent: boolean;
 }
 
@@ -210,13 +209,6 @@ export default function TrackOrderPage() {
               <div className="mt-4 rounded-md bg-sand/20 p-3 text-xs">
                 <p className="font-semibold text-charcoal/70">Customization:</p>
                 <p className="text-charcoal">{order.customizationNote}</p>
-              </div>
-            )}
-
-            {order.personalMessage && (
-              <div className="mt-3 rounded-md bg-sand/20 p-3 text-xs">
-                <p className="font-semibold text-charcoal/70">Message:</p>
-                <p className="italic text-charcoal">"{order.personalMessage}"</p>
               </div>
             )}
           </div>
