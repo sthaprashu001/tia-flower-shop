@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { getBouquetById } from "@/lib/products";
+import { siteUrl } from "@/lib/site";
 import AddToCartButton from "@/components/AddToCartButton";
 import LeadTimeNote from "@/components/LeadTimeNote";
 import T from "@/components/T";
@@ -38,8 +39,34 @@ export default async function BouquetDetailPage({ params }: { params: { id: stri
   const bouquet = await getBouquetById(params.id);
   if (!bouquet) return notFound();
 
+  // Product rich-result: lets this bouquet show its price (and stock status)
+  // directly in Google search results, not just as a plain blue link.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: bouquet.name,
+    description: bouquet.description || `${bouquet.name} — fresh bouquet near TIA, Kathmandu.`,
+    image: bouquet.image ? [new URL(bouquet.image, siteUrl).toString()] : undefined,
+    category: bouquet.category,
+    offers: {
+      "@type": "Offer",
+      url: `${siteUrl}/bouquets/${bouquet.id}`,
+      priceCurrency: "NPR",
+      price: bouquet.price,
+      availability: bouquet.available
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+    },
+  };
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
+      <script
+        type="application/ld+json"
+        // JSON.stringify never emits "<" from these fields, but escaped defensively
+        // in case a future admin-entered name/description ever contains it.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
       <Link href="/bouquets" className="text-sm text-charcoal/60 hover:text-rose-dark">
         <T k="detail.back" />
       </Link>

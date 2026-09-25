@@ -3,14 +3,31 @@
 import Link from "next/link";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { useLang } from "@/components/LanguageProvider";
+import { dictionary } from "@/lib/i18n";
 
 const QUESTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+// FAQPage rich result: pulled from the same English copy shown on the page
+// (not re-typed), so it can't drift out of sync with what customers read.
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: QUESTIONS.map((n) => ({
+    "@type": "Question",
+    name: dictionary[`faq.q${n}`].en,
+    acceptedAnswer: { "@type": "Answer", text: dictionary[`faq.a${n}`].en },
+  })),
+};
 
 export default function FaqPage() {
   const { t } = useLang();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-14">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }}
+      />
       <h1 className="font-display text-3xl italic text-charcoal">{t("faq.title")}</h1>
       <p className="mt-2 text-charcoal/70">{t("faq.intro")}</p>
 

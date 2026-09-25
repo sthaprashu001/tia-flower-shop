@@ -15,6 +15,7 @@ const ProductSchema = new Schema(
     category: { type: String, default: "Bouquets" },
     // Featured on homepage
     featured: { type: Boolean, default: false },
+    todayPick: { type: Boolean, default: false },
     // Display order on homepage (1-7)
     featuredOrder: { type: Number, default: 0 },
     // Minimum notice: customers must order at least this many hours before
