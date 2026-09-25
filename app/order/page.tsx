@@ -113,6 +113,14 @@ function OrderForm() {
   const cartEmpty = hydrated && !loadingBouquets && lines.length === 0;
   const unavailable = lines.filter((l) => !l.bouquet.available);
   const hasCustomizable = lines.some((l) => l.bouquet.customizable);
+  // Card message is a perk for pricier bouquets — free with any single bouquet over Rs. 900.
+  const CARD_MESSAGE_MIN_PRICE = 900;
+  const canAddCardMessage = lines.some((l) => l.bouquet.price > CARD_MESSAGE_MIN_PRICE);
+
+  useEffect(() => {
+    if (!canAddCardMessage && personalMessage) setPersonalMessage("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAddCardMessage]);
 
   // Longest "order at least X before" among the items in the cart.
   const leadHours = maxLeadHours(lines.map((l) => l.bouquet));
@@ -496,15 +504,21 @@ function OrderForm() {
                   <label className="text-sm font-medium text-charcoal" htmlFor="personalMessage">
                     {t("order.cardMessage")}
                   </label>
-                  <textarea
-                    id="personalMessage"
-                    value={personalMessage}
-                    maxLength={300}
-                    onChange={(e) => setPersonalMessage(e.target.value)}
-                    rows={2}
-                    placeholder={t("order.messagePlaceholder")}
-                    className={input}
-                  />
+                  {canAddCardMessage ? (
+                    <textarea
+                      id="personalMessage"
+                      value={personalMessage}
+                      maxLength={300}
+                      onChange={(e) => setPersonalMessage(e.target.value)}
+                      rows={2}
+                      placeholder={t("order.messagePlaceholder")}
+                      className={input}
+                    />
+                  ) : (
+                    <p className="mt-1 rounded-md border border-dashed border-sand bg-sand/10 px-3 py-2 text-sm text-charcoal/50">
+                      {t("order.cardMessageLocked")}
+                    </p>
+                  )}
                 </div>
               </>
             )}

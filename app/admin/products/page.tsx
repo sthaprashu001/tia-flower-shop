@@ -32,6 +32,7 @@ interface AdminProduct {
   featured?: boolean;
   featuredOrder?: number;
   leadTimeHours?: number;
+  todayPick?: boolean;
 }
 
 /**
@@ -74,6 +75,7 @@ const emptyForm = {
   featured: false,
   featuredOrder: 0,
   leadTimeHours: "0", // minimum notice in hours; "0" = none
+  todayPick: false,
 };
 
 export default function AdminProductsPage() {
@@ -140,6 +142,7 @@ export default function AdminProductsPage() {
       featured: p.featured ?? false,
       featuredOrder: p.featuredOrder ?? 0,
       leadTimeHours: String(p.leadTimeHours ?? 0),
+      todayPick: p.todayPick ?? false,
     });
     setCustomLead(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -201,6 +204,7 @@ export default function AdminProductsPage() {
       featured: form.featured,
       featuredOrder: form.featuredOrder,
       leadTimeHours: leadHours,
+      todayPick: form.todayPick,
     };
 
     try {
@@ -240,6 +244,27 @@ export default function AdminProductsPage() {
       alert("Could not change availability — try again.");
     } finally {
       setToggling((t) => ({ ...t, [p._id]: false }));
+    }
+  }
+
+  // One-tap "Today's pick" switch — shown in the homepage "Today's items"
+  // section for any category (see app/page.tsx), takes effect immediately.
+  async function handleToggleTodayPick(p: AdminProduct) {
+    const next = !p.todayPick;
+    setToggling((t) => ({ ...t, [`pick-${p._id}`]: true }));
+    setProducts((prev) => prev.map((x) => (x._id === p._id ? { ...x, todayPick: next } : x)));
+    try {
+      const res = await fetch(`/api/products/${p._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ todayPick: next }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setProducts((prev) => prev.map((x) => (x._id === p._id ? { ...x, todayPick: !next } : x)));
+      alert("Could not change Today's pick — try again.");
+    } finally {
+      setToggling((t) => ({ ...t, [`pick-${p._id}`]: false }));
     }
   }
 
@@ -458,6 +483,14 @@ export default function AdminProductsPage() {
             <label className="flex items-center gap-2 text-sm text-charcoal">
               <input
                 type="checkbox"
+                checked={form.todayPick}
+                onChange={(e) => setForm((f) => ({ ...f, todayPick: e.target.checked }))}
+              />
+              Today&apos;s pick
+            </label>
+            <label className="flex items-center gap-2 text-sm text-charcoal">
+              <input
+                type="checkbox"
                 checked={form.available}
                 onChange={(e) => setForm((f) => ({ ...f, available: e.target.checked }))}
               />
@@ -622,6 +655,32 @@ export default function AdminProductsPage() {
                     </span>
                     <span className={`text-xs font-semibold ${p.available ? "text-sage-dark" : "text-charcoal/50"}`}>
                       {p.available ? "Available" : "Sold out"}
+                    </span>
+                  </button>
+                )}
+                {!dbNotConnected && (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={p.todayPick ?? false}
+                    aria-label={`${p.name} today's pick`}
+                    disabled={toggling[`pick-${p._id}`]}
+                    onClick={() => handleToggleTodayPick(p)}
+                    className="mt-2 flex items-center gap-2 disabled:opacity-60"
+                  >
+                    <span
+                      className={`relative inline-block h-6 w-11 rounded-full transition ${
+                        p.todayPick ? "bg-rose" : "bg-charcoal/25"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                          p.todayPick ? "left-[1.375rem]" : "left-0.5"
+                        }`}
+                      />
+                    </span>
+                    <span className={`text-xs font-semibold ${p.todayPick ? "text-rose-dark" : "text-charcoal/50"}`}>
+                      {p.todayPick ? "Today's pick" : "Not in today's items"}
                     </span>
                   </button>
                 )}

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter, Space_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
@@ -29,6 +29,12 @@ const spaceMono = Space_Mono({
   weight: ["400", "700"],
 });
 
+// Tints the mobile browser's address bar with the brand color — small polish,
+// noticeable on every visit.
+export const viewport: Viewport = {
+  themeColor: "#E23B5D",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -57,6 +63,12 @@ export const metadata: Metadata = {
     icon: "/favicon.png",
     shortcut: "/favicon.png",
     apple: "/favicon.png",
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "TIA Flowers",
   },
   openGraph: {
     title: "TIA Flower Shop | Fresh Bouquets Near the Airport",

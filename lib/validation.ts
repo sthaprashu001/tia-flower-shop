@@ -93,7 +93,7 @@ export function parseProductFields(
     if (!isSafeImageUrl(b.image)) return { error: "Image must be uploaded through the admin panel." };
     data.image = b.image;
   }
-  for (const flag of ["available", "customizable", "featured"] as const) {
+  for (const flag of ["available", "customizable", "featured", "todayPick"] as const) {
     if (flag in b) {
       if (typeof b[flag] !== "boolean") return { error: `${flag} must be true or false.` };
       data[flag] = b[flag];

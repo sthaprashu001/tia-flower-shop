@@ -58,16 +58,22 @@ export default async function HomePage() {
     featuredFlag[0],
   ].filter(Boolean);
 
-  // For "Today's items": sort by category (bouquets first), then take first 4
+  // "Today's items": the admin ticks "Show in Today's items" per bouquet, in any
+  // category (see /admin/products). Picked items show first, in category order
+  // (Bouquets, then others). If the admin hasn't picked at least 8, the rest are
+  // filled in automatically (also category-first) so mobile always shows a full
+  // 4-row grid (2 columns × 4 rows) instead of a half-empty section.
+  const MIN_TODAY_ITEMS = 8;
   const available = bouquets.filter((b) => b.available);
-  const todayItems = available
-    .sort((a, b) => {
-      // Bouquets come first
-      if (a.category === "Bouquets" && b.category !== "Bouquets") return -1;
-      if (a.category !== "Bouquets" && b.category === "Bouquets") return 1;
-      return 0;
-    })
-    .slice(0, 4);
+  const byCategoryFirst = (a: (typeof available)[number], b: (typeof available)[number]) => {
+    if (a.category === "Bouquets" && b.category !== "Bouquets") return -1;
+    if (a.category !== "Bouquets" && b.category === "Bouquets") return 1;
+    return 0;
+  };
+
+  const picked = available.filter((b) => b.todayPick).sort(byCategoryFirst);
+  const rest = available.filter((b) => !b.todayPick).sort(byCategoryFirst);
+  const todayItems = [...picked, ...rest].slice(0, Math.max(MIN_TODAY_ITEMS, picked.length));
 
   return (
     <div>

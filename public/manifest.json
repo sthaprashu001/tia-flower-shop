@@ -1,0 +1,14 @@
+{
+  "name": "TIA Flower Shop",
+  "short_name": "TIA Flowers",
+  "description": "Fresh bouquets, khata and flags — prepared fresh and handed to you near Tribhuvan International Airport, Kathmandu.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FBF1E7",
+  "theme_color": "#E23B5D",
+  "icons": [
+    { "src": "/logo/tia-logo.jpeg", "sizes": "1024x1024", "type": "image/jpeg", "purpose": "any" },
+    { "src": "/favicon.png", "sizes": "any", "type": "image/png" }
+  ]
+}
