@@ -31,7 +31,7 @@ interface AdminProduct {
   category?: string;
   featured?: boolean;
   featuredOrder?: number;
-  leadTimeHours?: number;
+  leadTimeMinutes?: number;
   todayPick?: boolean;
 }
 
@@ -61,7 +61,18 @@ async function shrinkImage(file: File): Promise<File> {
   }
 }
 
-const PRESET_HOURS = LEAD_TIME_PRESETS.map((p) => p.hours);
+const PRESET_MINUTES = LEAD_TIME_PRESETS.map((p) => p.minutes);
+const LEAD_TIME_MAX_MINUTES = 43200; // 30 days
+const UNIT_MINUTES = { minutes: 1, hours: 60, days: 1440 } as const;
+type LeadUnit = keyof typeof UNIT_MINUTES;
+
+/** Picks the largest whole unit that exactly represents `totalMinutes`, for the custom input. */
+function minutesToBestUnit(totalMinutes: number): { amount: number; unit: LeadUnit } {
+  if (totalMinutes <= 0) return { amount: 1, unit: "hours" };
+  if (totalMinutes % 1440 === 0) return { amount: totalMinutes / 1440, unit: "days" };
+  if (totalMinutes % 60 === 0) return { amount: totalMinutes / 60, unit: "hours" };
+  return { amount: totalMinutes, unit: "minutes" };
+}
 
 const emptyForm = {
   name: "",
@@ -74,7 +85,7 @@ const emptyForm = {
   category: "Bouquets",
   featured: false,
   featuredOrder: 0,
-  leadTimeHours: "0", // minimum notice in hours; "0" = none
+  leadTimeMinutes: "0", // minimum notice in minutes; "0" = none
   todayPick: false,
 };
 
@@ -93,6 +104,8 @@ export default function AdminProductsPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [customLead, setCustomLead] = useState(false);
+  const [customAmount, setCustomAmount] = useState("1");
+  const [customUnit, setCustomUnit] = useState<LeadUnit>("hours");
   const [toggling, setToggling] = useState<Record<string, boolean>>({});
   
   // Filters
@@ -141,9 +154,12 @@ export default function AdminProductsPage() {
       category: p.category || "Bouquets",
       featured: p.featured ?? false,
       featuredOrder: p.featuredOrder ?? 0,
-      leadTimeHours: String(p.leadTimeHours ?? 0),
+      leadTimeMinutes: String(p.leadTimeMinutes ?? 0),
       todayPick: p.todayPick ?? false,
     });
+    const best = minutesToBestUnit(p.leadTimeMinutes ?? 0);
+    setCustomAmount(String(best.amount));
+    setCustomUnit(best.unit);
     setCustomLead(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -152,6 +168,8 @@ export default function AdminProductsPage() {
     setEditingId(null);
     setForm(emptyForm);
     setCustomLead(false);
+    setCustomAmount("1");
+    setCustomUnit("hours");
     setFormError(null);
   }
 
@@ -186,9 +204,9 @@ export default function AdminProductsPage() {
     const price = Number(form.price);
     if (!price || price <= 0) return setFormError("Enter a valid price.");
 
-    const leadHours = Number(form.leadTimeHours);
-    if (!Number.isInteger(leadHours) || leadHours < 0 || leadHours > 720) {
-      return setFormError("Order-before time must be a whole number of hours (0–720).");
+    const leadMinutes = Number(form.leadTimeMinutes);
+    if (!Number.isInteger(leadMinutes) || leadMinutes < 0 || leadMinutes > LEAD_TIME_MAX_MINUTES) {
+      return setFormError("Order-before time must be a whole number of minutes (0–43200, i.e. up to 30 days).");
     }
 
     setSaving(true);
@@ -203,7 +221,7 @@ export default function AdminProductsPage() {
       category: form.category.trim() || "Bouquets",
       featured: form.featuredOrder > 0,
       featuredOrder: form.featuredOrder,
-      leadTimeHours: leadHours,
+      leadTimeMinutes: leadMinutes,
       todayPick: form.todayPick,
     };
 
@@ -401,40 +419,60 @@ export default function AdminProductsPage() {
               Order before (minimum notice)
             </label>
             <select
-              value={customLead || !PRESET_HOURS.includes(Number(form.leadTimeHours)) ? "custom" : form.leadTimeHours}
+              value={customLead || !PRESET_MINUTES.includes(Number(form.leadTimeMinutes)) ? "custom" : form.leadTimeMinutes}
               onChange={(e) => {
                 if (e.target.value === "custom") {
+                  const best = minutesToBestUnit(Number(form.leadTimeMinutes) || 0);
+                  setCustomAmount(String(best.amount));
+                  setCustomUnit(best.unit);
                   setCustomLead(true);
                 } else {
                   setCustomLead(false);
-                  setForm((f) => ({ ...f, leadTimeHours: e.target.value }));
+                  setForm((f) => ({ ...f, leadTimeMinutes: e.target.value }));
                 }
               }}
               className="mt-1 w-full rounded-md border border-sand bg-white px-3 py-2"
             >
               {LEAD_TIME_PRESETS.map((o) => (
-                <option key={o.hours} value={String(o.hours)}>
+                <option key={o.minutes} value={String(o.minutes)}>
                   {o.label}
                 </option>
               ))}
-              <option value="custom">Custom (choose the hours)…</option>
+              <option value="custom">Custom (choose the amount)…</option>
             </select>
-            {(customLead || !PRESET_HOURS.includes(Number(form.leadTimeHours))) && (
+            {(customLead || !PRESET_MINUTES.includes(Number(form.leadTimeMinutes))) && (
               <div className="mt-2 flex items-center gap-2">
                 <input
                   type="number"
                   min={1}
-                  max={720}
-                  value={form.leadTimeHours}
-                  onChange={(e) => setForm((f) => ({ ...f, leadTimeHours: e.target.value }))}
-                  className="w-28 rounded-md border border-sand px-3 py-2"
+                  max={LEAD_TIME_MAX_MINUTES / UNIT_MINUTES[customUnit]}
+                  value={customAmount}
+                  onChange={(e) => {
+                    setCustomAmount(e.target.value);
+                    const total = Math.round((Number(e.target.value) || 0) * UNIT_MINUTES[customUnit]);
+                    setForm((f) => ({ ...f, leadTimeMinutes: String(total) }));
+                  }}
+                  className="w-24 rounded-md border border-sand px-3 py-2"
                 />
-                <span className="text-sm text-charcoal/60">hours before pickup</span>
+                <select
+                  value={customUnit}
+                  onChange={(e) => {
+                    const unit = e.target.value as LeadUnit;
+                    setCustomUnit(unit);
+                    const total = Math.round((Number(customAmount) || 0) * UNIT_MINUTES[unit]);
+                    setForm((f) => ({ ...f, leadTimeMinutes: String(total) }));
+                  }}
+                  className="rounded-md border border-sand bg-white px-3 py-2 text-sm"
+                >
+                  <option value="minutes">minutes before pickup</option>
+                  <option value="hours">hours before pickup</option>
+                  <option value="days">days before pickup</option>
+                </select>
               </div>
             )}
             <p className="mt-1 text-xs text-charcoal/50">
-              {Number(form.leadTimeHours) > 0
-                ? `Customers must order at least ${leadTimeLabel(Number(form.leadTimeHours))} before pickup. They see this on the product, in their cart and on the order form, and earlier pickup times are switched off for them.`
+              {Number(form.leadTimeMinutes) > 0
+                ? `Customers must order at least ${leadTimeLabel(Number(form.leadTimeMinutes))} before pickup. They see this on the product, in their cart and on the order form, and earlier pickup times are switched off for them.`
                 : "No minimum — customers can pick any free pickup time."}
             </p>
           </div>
@@ -630,8 +668,8 @@ export default function AdminProductsPage() {
                 </div>
                 <p className="mt-1 text-xs text-charcoal/50">
                   {p.customizable ? "Customizable" : ""}
-                  {p.customizable && (p.leadTimeHours || 0) > 0 ? " · " : ""}
-                  {(p.leadTimeHours || 0) > 0 ? `Order ${leadTimeLabel(p.leadTimeHours || 0)} ahead` : ""}
+                  {p.customizable && (p.leadTimeMinutes || 0) > 0 ? " · " : ""}
+                  {(p.leadTimeMinutes || 0) > 0 ? `Order ${leadTimeLabel(p.leadTimeMinutes || 0)} ahead` : ""}
                 </p>
                 {!dbNotConnected && (
                   <button

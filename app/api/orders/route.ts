@@ -54,7 +54,7 @@ async function parseOrder(
   raw: unknown,
   settings: ShopSettingsValue,
   nowMs: number
-): Promise<ParseFailure | { data: ParsedOrder; leadHours: number }> {
+): Promise<ParseFailure | { data: ParsedOrder; leadMinutes: number }> {
   if (!raw || typeof raw !== "object") return { error: "Invalid request." };
   const b = raw as Record<string, unknown>;
 
@@ -68,7 +68,7 @@ async function parseOrder(
   if (b.items.length > 20) return { error: "Too many items in one order." };
 
   const items: OrderInput["items"] = [];
-  let leadHours = 0;
+  let leadMinutes = 0;
   let leadProduct = "";
   for (const it of b.items) {
     const line = (it && typeof it === "object" ? it : {}) as Record<string, unknown>;
@@ -82,8 +82,8 @@ async function parseOrder(
     const bouquet = await getBouquetById(line.bouquetId);
     if (!bouquet) return { error: "One of the bouquets in your order no longer exists." };
     if (!bouquet.available) return { error: `"${bouquet.name}" is not available today. Please remove it from your cart.` };
-    if ((bouquet.leadTimeHours || 0) > leadHours) {
-      leadHours = bouquet.leadTimeHours || 0;
+    if ((bouquet.leadTimeMinutes || 0) > leadMinutes) {
+      leadMinutes = bouquet.leadTimeMinutes || 0;
       leadProduct = bouquet.name;
     }
     // Name and price are copied from the catalog at order time (never from the client).
@@ -107,12 +107,12 @@ async function parseOrder(
   if (instant < nowMs) return { error: "That pickup time has already passed. Please choose a later time." };
 
   // Per-product "order at least X before" rule.
-  if (leadHours > 0 && instant < earliestPickupMs(nowMs, leadHours)) {
+  if (leadMinutes > 0 && instant < earliestPickupMs(nowMs, leadMinutes)) {
     // Earliest allowed moment expressed in shop time, for a helpful message.
-    const earliestShop = new Date(earliestPickupMs(nowMs, leadHours) + SHOP_UTC_OFFSET_MINUTES * 60_000).toISOString();
+    const earliestShop = new Date(earliestPickupMs(nowMs, leadMinutes) + SHOP_UTC_OFFSET_MINUTES * 60_000).toISOString();
     return {
-      error: `"${leadProduct}" must be ordered at least ${leadTimeLabel(leadHours)} before pickup. The earliest pickup for this order is ${formatPickup(earliestShop.slice(0, 10), earliestShop.slice(11, 16))}.`,
-      extra: { leadTimeHours: leadHours, earliestDate: earliestShop.slice(0, 10), earliestTime: earliestShop.slice(11, 16) },
+      error: `"${leadProduct}" must be ordered at least ${leadTimeLabel(leadMinutes)} before pickup. The earliest pickup for this order is ${formatPickup(earliestShop.slice(0, 10), earliestShop.slice(11, 16))}.`,
+      extra: { leadTimeMinutes: leadMinutes, earliestDate: earliestShop.slice(0, 10), earliestTime: earliestShop.slice(11, 16) },
     };
   }
 
@@ -120,7 +120,7 @@ async function parseOrder(
   if (!meetingLocation) return { error: "Meeting location near TIA is required." };
 
   return {
-    leadHours,
+    leadMinutes,
     data: {
       customerName,
       phone,
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
       capacityPerHour: settings.capacityPerHour,
       openHour: settings.openHour,
       closeHour: settings.closeHour,
-      leadHours: parsed.leadHours,
+      leadMinutes: parsed.leadMinutes,
       nowMs,
     });
     return NextResponse.json(

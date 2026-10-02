@@ -20,7 +20,7 @@ const ProductSchema = new Schema(
     featuredOrder: { type: Number, default: 0 },
     // Minimum notice: customers must order at least this many hours before
     // pickup (12 = "12 hours before", 24 = "1 day before"). 0 = no minimum.
-    leadTimeHours: { type: Number, default: 0, min: 0, max: 720 },
+    leadTimeMinutes: { type: Number, default: 0, min: 0, max: 43200 },
   },
   { timestamps: true }
 );

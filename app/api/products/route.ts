@@ -49,7 +49,8 @@ export async function GET() {
       category: p.category || "Bouquets",
       featured: p.featured === true, // Explicitly convert to boolean
       featuredOrder: Number(p.featuredOrder) || 0,
-      leadTimeHours: Number(p.leadTimeHours) || 0,
+      leadTimeMinutes: Number(p.leadTimeMinutes) || 0,
+      todayPick: p.todayPick === true,
     }));
     return NextResponse.json({ source: "database", products });
   } catch (err) {

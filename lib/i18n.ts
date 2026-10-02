@@ -273,10 +273,17 @@ export function translate(lang: Lang, key: string, vars?: Record<string, string 
 }
 
 /** "12 hours" / "1 day" — or "12 घण्टा" / "1 दिन" — for a product's minimum notice. */
-export function leadTimeText(lang: Lang, hours: number): string {
+export function leadTimeText(lang: Lang, minutes: number): string {
+  if (minutes <= 0) return "";
   if (lang === "ne") {
-    if (hours <= 0) return "";
-    return hours % 24 === 0 ? `${hours / 24} दिन` : `${hours} घण्टा`;
+    const d = Math.floor(minutes / (24 * 60));
+    const h = Math.floor((minutes % (24 * 60)) / 60);
+    const m = minutes % 60;
+    const parts: string[] = [];
+    if (d) parts.push(`${d} दिन`);
+    if (h) parts.push(`${h} घण्टा`);
+    if (m) parts.push(`${m} मिनेट`);
+    return parts.join(" ");
   }
-  return leadTimeLabel(hours);
+  return leadTimeLabel(minutes);
 }

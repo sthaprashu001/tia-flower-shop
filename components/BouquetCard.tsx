@@ -44,9 +44,9 @@ export default function BouquetCard({ bouquet }: { bouquet: Bouquet }) {
               <T k="card.customizable" />
             </span>
           )}
-          {(bouquet.leadTimeHours || 0) > 0 && (
+          {(bouquet.leadTimeMinutes || 0) > 0 && (
             <span className="inline-block rounded-full bg-amber-100 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-amber-800">
-              <LeadTimeNote hours={bouquet.leadTimeHours || 0} k="card.leadTime" />
+              <LeadTimeNote minutes={bouquet.leadTimeMinutes || 0} k="card.leadTime" />
             </span>
           )}
         </div>

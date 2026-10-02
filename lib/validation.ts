@@ -99,12 +99,12 @@ export function parseProductFields(
       data[flag] = b[flag];
     }
   }
-  if ("leadTimeHours" in b) {
-    const n = num(b.leadTimeHours, 0, 720);
+  if ("leadTimeMinutes" in b) {
+    const n = num(b.leadTimeMinutes, 0, 43200);
     if (n === null || !Number.isInteger(n)) {
-      return { error: "Order-before time must be a whole number of hours (0–720)." };
+      return { error: "Order-before time must be a whole number of minutes (0–43200, i.e. up to 30 days)." };
     }
-    data.leadTimeHours = n;
+    data.leadTimeMinutes = n;
   }
   if ("featuredOrder" in b) {
     const n = num(b.featuredOrder, 0, 50);
