@@ -48,13 +48,13 @@ export function suggestSlots(opts: {
   capacityPerHour: number;
   openHour: number;
   closeHour: number;
-  leadHours: number;
+  leadMinutes: number;
   nowMs?: number;
   limit?: number;
 }): string[] {
-  const { date, requestedTime, counts, capacityPerHour, openHour, closeHour, leadHours } = opts;
+  const { date, requestedTime, counts, capacityPerHour, openHour, closeHour, leadMinutes } = opts;
   const nowMs = opts.nowMs ?? Date.now();
-  const earliest = earliestPickupMs(nowMs, leadHours);
+  const earliest = earliestPickupMs(nowMs, leadMinutes);
   const requestedMin = Number(requestedTime.slice(0, 2)) * 60 + Number(requestedTime.slice(3, 5));
 
   const free = buildSlots(openHour, closeHour).filter(

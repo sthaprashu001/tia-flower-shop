@@ -25,7 +25,8 @@ interface ProductDoc {
   category?: string;
   featured?: boolean;
   featuredOrder?: number;
-  leadTimeHours?: number;
+  leadTimeMinutes?: number;
+  todayPick?: boolean;
 }
 
 function serialize(doc: ProductDoc): Bouquet {
@@ -40,7 +41,8 @@ function serialize(doc: ProductDoc): Bouquet {
     category: doc.category || "Bouquets", // default to "Bouquets" for backward compatibility
     featured: doc.featured === true,
     featuredOrder: doc.featuredOrder || 0,
-    leadTimeHours: doc.leadTimeHours || 0,
+    leadTimeMinutes: doc.leadTimeMinutes || 0,
+    todayPick: doc.todayPick === true,
   };
 }
 

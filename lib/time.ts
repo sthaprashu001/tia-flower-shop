@@ -28,32 +28,39 @@ export function addDaysIso(date: string, n: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + n * DAY).toISOString().slice(0, 10);
 }
 
-/** "12 hours", "1 day", "2 days", "36 hours" … for showing a lead time. */
-export function leadTimeLabel(hours: number): string {
-  if (hours <= 0) return "";
-  if (hours % 24 === 0) {
-    const d = hours / 24;
-    return d === 1 ? "1 day" : `${d} days`;
-  }
-  return hours === 1 ? "1 hour" : `${hours} hours`;
+/** "45 minutes", "12 hours", "1 day", "1 day 6 hours" … for showing a lead time. */
+export function leadTimeLabel(minutes: number): string {
+  if (minutes <= 0) return "";
+  const d = Math.floor(minutes / (24 * 60));
+  const h = Math.floor((minutes % (24 * 60)) / 60);
+  const m = minutes % 60;
+  const parts: string[] = [];
+  if (d) parts.push(d === 1 ? "1 day" : `${d} days`);
+  if (h) parts.push(h === 1 ? "1 hour" : `${h} hours`);
+  if (m) parts.push(m === 1 ? "1 minute" : `${m} minutes`);
+  return parts.join(" ");
 }
 
-/** Presets shown in the admin form; anything else is a custom number of hours. */
-export const LEAD_TIME_PRESETS: { hours: number; label: string }[] = [
-  { hours: 0, label: "No minimum notice" },
-  { hours: 12, label: "12 hours before" },
-  { hours: 24, label: "1 day before" },
-  { hours: 48, label: "2 days before" },
+/** Presets shown in the admin form, in minutes; anything else is a custom amount. */
+export const LEAD_TIME_PRESETS: { minutes: number; label: string }[] = [
+  { minutes: 0, label: "No minimum notice" },
+  { minutes: 15, label: "15 minutes before" },
+  { minutes: 30, label: "30 minutes before" },
+  { minutes: 60, label: "1 hour before" },
+  { minutes: 180, label: "3 hours before" },
+  { minutes: 720, label: "12 hours before" },
+  { minutes: 1440, label: "1 day before" },
+  { minutes: 2880, label: "2 days before" },
 ];
 
-/** Earliest allowed pickup (ms) for an order placed at `nowMs` needing `leadHours` notice. */
-export function earliestPickupMs(nowMs: number, leadHours: number): number {
-  return nowMs + Math.max(0, leadHours) * HOUR;
+/** Earliest allowed pickup (ms) for an order placed at `nowMs` needing `leadMinutes` notice. */
+export function earliestPickupMs(nowMs: number, leadMinutes: number): number {
+  return nowMs + Math.max(0, leadMinutes) * MIN;
 }
 
-/** Longest lead time among the ordered products (0 when none). */
-export function maxLeadHours(items: { leadTimeHours?: number }[]): number {
-  return items.reduce((max, i) => Math.max(max, i.leadTimeHours || 0), 0);
+/** Longest lead time (in minutes) among the ordered products (0 when none). */
+export function maxLeadMinutes(items: { leadTimeMinutes?: number }[]): number {
+  return items.reduce((max, i) => Math.max(max, i.leadTimeMinutes || 0), 0);
 }
 
 /** "HH:MM" pickup slots every `stepMin` minutes while the shop is open. */

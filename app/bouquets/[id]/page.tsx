@@ -97,9 +97,9 @@ export default async function BouquetDetailPage({ params }: { params: { id: stri
 
           <p className="mt-4 text-charcoal/70">{bouquet.description}</p>
 
-          {(bouquet.leadTimeHours || 0) > 0 && (
+          {(bouquet.leadTimeMinutes || 0) > 0 && (
             <p className="mt-3 rounded-card bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              ⏰ <LeadTimeNote hours={bouquet.leadTimeHours || 0} k="detail.leadNotice" />
+              ⏰ <LeadTimeNote minutes={bouquet.leadTimeMinutes || 0} k="detail.leadNotice" />
             </p>
           )}
 

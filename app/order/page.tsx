@@ -13,7 +13,7 @@ import {
   addDaysIso,
   earliestPickupMs,
   formatPickup,
-  maxLeadHours,
+  maxLeadMinutes,
   shopToday,
 } from "@/lib/time";
 
@@ -114,10 +114,10 @@ function OrderForm() {
   const hasCustomizable = lines.some((l) => l.bouquet.customizable);
 
   // Longest "order at least X before" among the items in the cart.
-  const leadHours = maxLeadHours(lines.map((l) => l.bouquet));
-  const leadProduct = lines.find((l) => (l.bouquet.leadTimeHours || 0) === leadHours && leadHours > 0)?.bouquet.name;
+  const leadMinutes = maxLeadMinutes(lines.map((l) => l.bouquet));
+  const leadProduct = lines.find((l) => (l.bouquet.leadTimeMinutes || 0) === leadMinutes && leadMinutes > 0)?.bouquet.name;
   const earliestMs = Math.max(
-    earliestPickupMs(now, leadHours),
+    earliestPickupMs(now, leadMinutes),
     now + MIN_NOTICE_MINUTES * 60_000
   );
   const earliestShop = new Date(earliestMs + SHOP_UTC_OFFSET_MINUTES * 60_000).toISOString();
@@ -334,9 +334,9 @@ function OrderForm() {
                   {!bouquet.available && (
                     <p className="mt-2 text-xs font-semibold text-rose-dark">{t("order.itemUnavailable")}</p>
                   )}
-                  {bouquet.available && (bouquet.leadTimeHours || 0) > 0 && (
+                  {bouquet.available && (bouquet.leadTimeMinutes || 0) > 0 && (
                     <p className="mt-2 text-xs text-amber-800">
-                      ⏰ {t("detail.leadNotice", { time: leadTimeText(lang, bouquet.leadTimeHours || 0) })}
+                      ⏰ {t("detail.leadNotice", { time: leadTimeText(lang, bouquet.leadTimeMinutes || 0) })}
                     </p>
                   )}
                 </div>
@@ -394,12 +394,12 @@ function OrderForm() {
           <fieldset className="space-y-3">
             <legend className="font-display text-lg text-charcoal">{t("order.whenWhere")}</legend>
 
-            {leadHours > 0 && (
+            {leadMinutes > 0 && (
               <p className="rounded-card bg-amber-50 px-4 py-3 text-sm text-amber-900">
                 ⏰{" "}
                 {t("order.leadCartNotice", {
                   product: leadProduct || "",
-                  time: leadTimeText(lang, leadHours),
+                  time: leadTimeText(lang, leadMinutes),
                   earliest: formatPickup(earliestShop.slice(0, 10), earliestShop.slice(11, 16), lang === "ne" ? "ne-NP" : "en-GB"),
                 })}
               </p>

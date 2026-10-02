@@ -12,7 +12,7 @@ export interface Bouquet {
   featured?: boolean; // appears on homepage
   featuredOrder?: number; // display order (1-7)
   cost?: number; // admin-only; never sent to customers
-  leadTimeHours?: number; // customers must order this many hours before pickup (0 = no minimum)
+  leadTimeMinutes?: number; // customers must order this many minutes before pickup (0 = no minimum)
   todayPick?: boolean; // admin-curated: show in the homepage "Today's items" section
 }
 

@@ -69,9 +69,9 @@ export default function CartPage() {
                   {!bouquet.available && (
                     <p className="mt-1 text-xs font-semibold text-rose-dark">{t("order.itemUnavailable")}</p>
                   )}
-                  {bouquet.available && (bouquet.leadTimeHours || 0) > 0 && (
+                  {bouquet.available && (bouquet.leadTimeMinutes || 0) > 0 && (
                     <p className="mt-1 text-xs text-amber-800">
-                      ⏰ {t("detail.leadNotice", { time: leadTimeText(lang, bouquet.leadTimeHours || 0) })}
+                      ⏰ {t("detail.leadNotice", { time: leadTimeText(lang, bouquet.leadTimeMinutes || 0) })}
                     </p>
                   )}
                 </div>
