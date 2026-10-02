@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import Link from "next/link";
 import PasswordInput from "@/components/PasswordInput";
 
 /**
- * Real admin login (Phase 3) — replaces the old shared ADMIN_API_KEY.
- * Each admin has their own email/password, created via /admin/setup
- * (first account) or the dashboard's "Add staff" section (everyone after).
+ * Real admin login — replaces the old shared ADMIN_API_KEY.
+ * Each admin has their own email/password: the first account is created via
+ * /admin/setup (a one-time bootstrap, see lib/auth.ts), and every account
+ * after that is added by a super admin from /admin/admins (Manage admins).
  */
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -70,13 +70,6 @@ export default function AdminLoginPage() {
         >
           {checking ? "Signing in..." : "Sign in"}
         </button>
-
-        <p className="mt-4 text-center text-xs text-charcoal/50">
-          First time setting this up?{" "}
-          <Link href="/admin/setup" className="text-rose-dark hover:underline">
-            Create the admin account
-          </Link>
-        </p>
       </form>
     </div>
   );
