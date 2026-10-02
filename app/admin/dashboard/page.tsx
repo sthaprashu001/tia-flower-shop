@@ -20,12 +20,6 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Staff account management
-  const [staffEmail, setStaffEmail] = useState("");
-  const [staffPassword, setStaffPassword] = useState("");
-  const [staffName, setStaffName] = useState("");
-  const [staffError, setStaffError] = useState<string | null>(null);
-  const [staffSaving, setStaffSaving] = useState(false);
-  const [staffAdded, setStaffAdded] = useState(false);
 
   // Order status saving (per-order, keyed by order id)
   const [savingStatus, setSavingStatus] = useState<Record<string, boolean>>({});
@@ -238,31 +232,6 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function handleAddStaff(e: React.FormEvent) {
-    e.preventDefault();
-    setStaffError(null);
-    setStaffAdded(false);
-    setStaffSaving(true);
-
-    try {
-      const res = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: staffName, email: staffEmail, password: staffPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not add account.");
-      setStaffAdded(true);
-      setStaffEmail("");
-      setStaffPassword("");
-      setStaffName("");
-    } catch (err) {
-      setStaffError(err instanceof Error ? err.message : "Could not add account.");
-    } finally {
-      setStaffSaving(false);
-    }
-  }
-
   const todayRevenue = orders
     .filter((o) => o.status !== "CANCELLED" && o.status !== "REJECTED")
     .reduce((sum, o) => sum + o.total, 0);
@@ -293,7 +262,7 @@ export default function AdminDashboardPage() {
           </button>
           <button
             onClick={() => router.push("/admin/admins")}
-            className="whitespace-nowrap text-sm font-semibold text-rose-dark hover:underline"
+            className="whitespace-nowrap text-sm font-semibold text-blue-600 hover:underline"
           >
             Manage admins →
           </button>
@@ -477,59 +446,6 @@ export default function AdminDashboardPage() {
             className="mt-4 rounded-full bg-charcoal px-6 py-2.5 text-sm font-semibold text-ivory hover:bg-charcoal/80 disabled:opacity-60"
           >
             {pwSaving ? "Saving…" : "Change password"}
-          </button>
-        </form>
-      </div>
-
-      <div className="mt-10">
-        <h2 className="font-display text-xl italic text-charcoal">Team access</h2>
-        <p className="mt-1 text-sm text-charcoal/60">
-          Add a login for your sister or other staff — each person gets
-          their own email and password instead of sharing one.
-        </p>
-
-        <form onSubmit={handleAddStaff} className="mt-4 rounded-card border border-sand bg-white p-6">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
-                Name (optional)
-              </label>
-              <input
-                type="text"
-                value={staffName}
-                onChange={(e) => setStaffName(e.target.value)}
-                className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
-                Email
-              </label>
-              <input
-                type="email"
-                required
-                value={staffEmail}
-                onChange={(e) => setStaffEmail(e.target.value)}
-                className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
-                Password
-              </label>
-              <PasswordInput value={staffPassword} onChange={setStaffPassword} required minLength={8} autoComplete="new-password" />
-            </div>
-          </div>
-
-          {staffError && <p className="mt-3 text-sm text-rose-dark">{staffError}</p>}
-          {staffAdded && <p className="mt-3 text-sm text-green-700">Account created — they can log in now.</p>}
-
-          <button
-            type="submit"
-            disabled={staffSaving}
-            className="mt-4 rounded-full bg-charcoal px-6 py-2.5 text-sm font-semibold text-ivory hover:bg-charcoal/80 disabled:opacity-60"
-          >
-            {staffSaving ? "Adding…" : "Add account"}
           </button>
         </form>
       </div>
