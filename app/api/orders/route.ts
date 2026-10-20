@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { requireAdmin } from "@/lib/guards";
 import { clientIp, rateLimit, tooManyRequests } from "@/lib/rateLimit";
-import { cleanText, isIsoDate, isPhone, isTime } from "@/lib/validation";
+import { cleanText, isIsoDate, isPhone, isTime, normalizePhone } from "@/lib/validation";
 import { getBouquetById } from "@/lib/products";
 import { getShopSettings, ShopSettingsValue } from "@/lib/shopSettings";
-import { getHourCounts, suggestSlots } from "@/lib/orderSlots";
+import { getHourCounts, hasSlotPlace, suggestSlots } from "@/lib/orderSlots";
 import { SHOP_UTC_OFFSET_MINUTES, addDaysIso, earliestPickupMs, formatPickup, leadTimeLabel, pickupInstantMs, shopToday } from "@/lib/time";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import { sendWhatsAppNotificationToAdmins } from "@/lib/whatsapp";
 import Order from "@/models/Order";
+import { mockOrders } from "@/lib/mockStore";
 import { Order as OrderType, OrderInput } from "@/lib/types";
 
 // Order notification hook. Deliberately logs only the order number: customer
@@ -25,23 +26,11 @@ async function sendOrderNotification(order: OrderType) {
   }
 }
 
-/**
- * PHASE 1 fallback storage.
- * Without MONGODB_URI set, orders are kept in memory so you can test
- * the full flow locally. They disappear when the dev server restarts —
- * that's expected. Set MONGODB_URI in .env.local to persist for real.
- */
-declare global {
-  // eslint-disable-next-line no-var
-  var _mockOrders: OrderType[] | undefined;
-}
-const mockOrders: OrderType[] = global._mockOrders || [];
-global._mockOrders = mockOrders;
-
-// 6 random digits from the OS CSPRNG (1,000,000 combinations instead of 9,000),
-// so order numbers can't be guessed by counting up or by brute force.
+// 8 random digits from the OS CSPRNG (90 million combinations), so order
+// numbers can't be guessed by counting up or by brute force. (Older 6-digit
+// numbers still work for tracking.)
 function generateOrderNumber() {
-  return `TIA${crypto.randomInt(100000, 1000000)}`;
+  return `TIA${crypto.randomInt(10_000_000, 100_000_000)}`;
 }
 
 type ParsedOrder = Omit<OrderInput, "urgent"> & { urgent: boolean };
@@ -62,7 +51,7 @@ async function parseOrder(
   if (!customerName) return { error: "Name is required." };
 
   if (!isPhone(b.phone)) return { error: "Please enter a valid phone/WhatsApp number." };
-  const phone = (b.phone as string).trim();
+  const phone = normalizePhone(b.phone as string);
 
   if (!Array.isArray(b.items) || b.items.length === 0) return { error: "Select at least one bouquet." };
   if (b.items.length > 20) return { error: "Too many items in one order." };
@@ -134,9 +123,38 @@ async function parseOrder(
   };
 }
 
+function slotFullResponse(
+  input: ParsedOrder,
+  settings: ShopSettingsValue,
+  leadMinutes: number,
+  nowMs: number,
+  counts: Record<string, number>
+) {
+  const suggestions = suggestSlots({
+    date: input.date,
+    requestedTime: input.time,
+    counts,
+    capacityPerHour: settings.capacityPerHour,
+    openHour: settings.openHour,
+    closeHour: settings.closeHour,
+    leadMinutes,
+    nowMs,
+  });
+  return NextResponse.json(
+    {
+      error:
+        suggestions.length > 0
+          ? `That time slot is fully booked. These nearby times are free: ${suggestions.join(", ")}.`
+          : "That time slot is fully booked, and nothing else is free that day. Please try another date.",
+      suggestions,
+    },
+    { status: 409 }
+  );
+}
+
 export async function POST(req: NextRequest) {
   // Stop scripted order spam: 6 orders per 10 minutes per IP.
-  const limit = rateLimit(`order:${clientIp(req.headers)}`, 6, 10 * 60_000);
+  const limit = await rateLimit(`order:${clientIp(req.headers)}`, 6, 10 * 60_000);
   if (!limit.ok) return tooManyRequests(limit.retryAfter);
 
   let raw: unknown;
@@ -157,28 +175,8 @@ export async function POST(req: NextRequest) {
 
   // Hourly capacity — on a full slot, offer the nearest free ones.
   const counts = await getHourCounts(input.date);
-  const existingInHour = counts[input.time.slice(0, 2)] || 0;
-  if (existingInHour >= settings.capacityPerHour) {
-    const suggestions = suggestSlots({
-      date: input.date,
-      requestedTime: input.time,
-      counts,
-      capacityPerHour: settings.capacityPerHour,
-      openHour: settings.openHour,
-      closeHour: settings.closeHour,
-      leadMinutes: parsed.leadMinutes,
-      nowMs,
-    });
-    return NextResponse.json(
-      {
-        error:
-          suggestions.length > 0
-            ? `That time slot is fully booked. These nearby times are free: ${suggestions.join(", ")}.`
-            : "That time slot is fully booked, and nothing else is free that day. Please try another date.",
-        suggestions,
-      },
-      { status: 409 }
-    );
+  if ((counts[input.time.slice(0, 2)] || 0) >= settings.capacityPerHour) {
+    return slotFullResponse(input, settings, parsed.leadMinutes, nowMs, counts);
   }
 
   // Price is always recomputed on the server from the catalog — never taken from the client.
@@ -222,9 +220,21 @@ export async function POST(req: NextRequest) {
     if (!orderDoc) {
       return NextResponse.json({ error: "Could not save order. Please try again." }, { status: 500 });
     }
+
+    // Two customers may have grabbed the last place at the same moment — keep
+    // the earlier order, release this one and offer other times.
+    try {
+      if (!(await hasSlotPlace(input.date, input.time, orderDoc.orderNumber, settings.capacityPerHour))) {
+        await Order.deleteOne({ orderNumber: orderDoc.orderNumber });
+        const fresh = await getHourCounts(input.date);
+        return slotFullResponse(input, settings, parsed.leadMinutes, nowMs, fresh);
+      }
+    } catch (err) {
+      console.error("Slot re-check failed (order kept):", err);
+    }
   } else {
     orderDoc = buildDoc(generateOrderNumber());
-    mockOrders.unshift(orderDoc);
+    mockOrders().unshift(orderDoc);
   }
 
   // Tell the shop team (WhatsApp) — never blocks or fails the customer's order.
@@ -244,49 +254,15 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ order: orderDoc }, { status: 201 });
 }
 
-// GET /api/orders — admin dashboard (active orders), or customers looking up their own orders by phone.
+// GET /api/orders — admin dashboard only.
+//
+// Customers no longer look orders up by phone number: that let anyone who knew
+// (or guessed) a phone number read someone else's orders. Customers track an
+// order with order number + phone at /api/orders/track instead.
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const phone = searchParams.get("phone");
   const status = searchParams.get("status");
 
-  // If phone provided, it's a customer checking their order (no login).
-  // Because it is public, it is rate limited and never returns the customer's name.
-  if (phone) {
-    const limit = rateLimit(`order-lookup:${clientIp(req.headers)}`, 15, 10 * 60_000);
-    if (!limit.ok) return tooManyRequests(limit.retryAfter);
-
-    if (!isPhone(phone)) {
-      return NextResponse.json({ error: "Please enter a valid phone number." }, { status: 400 });
-    }
-    const cleanPhone = phone.trim();
-
-    if (isDatabaseConfigured()) {
-      try {
-        await connectToDatabase();
-        const orders = await Order.find({ phone: cleanPhone })
-          .select("-customerName -phone")
-          .sort({ createdAt: -1 })
-          .limit(50)
-          .lean();
-        return NextResponse.json({
-          source: "database",
-          orders: orders.map((o) => ({ ...o, id: String(o._id), _id: String(o._id) })),
-        });
-      } catch (err) {
-        console.error("Failed to load orders:", err);
-        return NextResponse.json({ error: "Could not fetch orders" }, { status: 500 });
-      }
-    }
-
-    // Mock mode
-    const customerOrders = mockOrders
-      .filter((o) => o.phone === cleanPhone)
-      .map(({ customerName: _n, phone: _p, ...rest }) => rest);
-    return NextResponse.json({ source: "mock", orders: customerOrders });
-  }
-
-  // Admin endpoint - requires an active admin
   const auth = await requireAdmin(req);
   if ("error" in auth) return auth.error;
 
@@ -313,9 +289,9 @@ export async function GET(req: NextRequest) {
   }
 
   // Mock mode
-  let activeOrders = mockOrders.filter((o) => !["DELIVERED", "CANCELLED", "REJECTED"].includes(o.status));
+  let activeOrders = mockOrders().filter((o) => !["DELIVERED", "CANCELLED", "REJECTED"].includes(o.status));
   if (status === "COMPLETED") {
-    activeOrders = mockOrders.filter((o) => o.status === "DELIVERED");
+    activeOrders = mockOrders().filter((o) => o.status === "DELIVERED");
   }
   return NextResponse.json({ source: "mock", orders: activeOrders });
 }

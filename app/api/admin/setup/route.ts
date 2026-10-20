@@ -28,7 +28,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const limit = rateLimit(`setup:${clientIp(req.headers)}`, 5, 15 * 60_000);
+  const limit = await rateLimit(`setup:${clientIp(req.headers)}`, 5, 15 * 60_000);
   if (!limit.ok) return tooManyRequests(limit.retryAfter);
 
   if (!isDatabaseConfigured()) {

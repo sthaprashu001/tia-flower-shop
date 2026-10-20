@@ -4,6 +4,11 @@ This scaffold is a working **Phase 1 MVP** you can run locally today. It is
 intentionally not "finished" — read this file to see what's real, what's a
 placeholder, and what to build next, in order.
 
+> **Status update:** Phases 1–6 below are implemented (database, NextAuth admin
+> accounts, order status saving, capacity limits, SEO). See `docs/CHANGES.md`
+> for the latest round of hardening and checkout improvements. The phase text
+> below is kept as the original roadmap.
+
 ## What's already working
 
 - Mobile-first homepage, bouquet listing, product detail pages
@@ -112,8 +117,5 @@ See `docs/GOOGLE_AND_SEO_SETUP.md` for complete step-by-step walkthrough.
 
 ## A note on scope
 
-Re-read `requirements-summary-via-chatgpt.txt` section 35
-("Important Features NOT Needed Initially") before adding anything not
-listed above. Flight tracking, payment gateways, customer accounts,
-loyalty systems, etc. are explicitly deferred — resist the urge to build
-them early.
+Flight tracking, payment gateways, customer accounts, loyalty systems, etc.
+are deliberately deferred — resist the urge to build them early.

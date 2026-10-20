@@ -1,15 +1,10 @@
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import { buildSlots, earliestPickupMs, pickupInstantMs } from "@/lib/time";
 import Order from "@/models/Order";
-import { Order as OrderType } from "@/lib/types";
-
-declare global {
-  // eslint-disable-next-line no-var
-  var _mockOrders: OrderType[] | undefined;
-}
+import { mockOrders } from "@/lib/mockStore";
 
 // Orders that still take up a slot (cancelled / rejected ones free it).
-const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DELIVERED"];
+export const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DELIVERED"];
 
 /**
  * How many active orders are booked in each pickup hour of `date`,
@@ -25,7 +20,7 @@ export async function getHourCounts(date: string): Promise<Record<string, number
       .lean<{ time: string }[]>();
     times = rows.map((r) => r.time);
   } else {
-    times = (global._mockOrders || [])
+    times = mockOrders()
       .filter((o) => o.date === date && ACTIVE_STATUSES.includes(o.status))
       .map((o) => o.time);
   }
@@ -35,6 +30,25 @@ export async function getHourCounts(date: string): Promise<Record<string, number
     counts[hour] = (counts[hour] || 0) + 1;
   }
   return counts;
+}
+
+/**
+ * Race-condition guard. Two customers can pass the "is the hour full?" check at
+ * the same moment, so after an order is saved we look at the hour again: the
+ * first `capacityPerHour` orders (oldest first) keep their place and any later
+ * one is told the slot is gone. Every server instance sees the same ordering,
+ * so they all agree on who got the last place.
+ */
+export async function hasSlotPlace(date: string, time: string, orderNumber: string, capacityPerHour: number): Promise<boolean> {
+  if (!isDatabaseConfigured()) return true; // in-memory mode is single-process
+  await connectToDatabase();
+  const hour = time.slice(0, 2);
+  const winners = await Order.find({ date, time: { $regex: `^${hour}:` }, status: { $in: ACTIVE_STATUSES } })
+    .sort({ _id: 1 })
+    .limit(capacityPerHour)
+    .select("orderNumber")
+    .lean<{ orderNumber: string }[]>();
+  return winners.some((o) => o.orderNumber === orderNumber);
 }
 
 /**

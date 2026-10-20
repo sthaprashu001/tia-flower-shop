@@ -73,10 +73,13 @@ export default function AdminOrdersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (!res.ok) throw new Error();
-    } catch {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(typeof data.error === "string" ? data.error : "Could not save — try again.");
+      }
+    } catch (err) {
       setOrders((prev) => prev.map((o) => (o.id === orderId && previous ? { ...o, status: previous } : o)));
-      setErrors((e) => ({ ...e, [orderId]: "Could not save — try again." }));
+      setErrors((e) => ({ ...e, [orderId]: err instanceof Error ? err.message : "Could not save — try again." }));
     } finally {
       setSaving((s) => ({ ...s, [orderId]: false }));
     }

@@ -43,10 +43,8 @@ export async function sendWhatsAppNotificationToAdmins(
     // Build message
     const message = formatOrderMessage(orderData);
 
-    // Send to each admin
-    for (const admin of admins) {
-      await sendWhatsAppMessage(admin.whatsappNumber, message);
-    }
+    // Send to all admins at once (one slow or failing number can't hold up the rest).
+    await Promise.allSettled(admins.map((admin) => sendWhatsAppMessage(admin.whatsappNumber, message)));
 
     console.log(
       `[WhatsApp] Sent order notifications to ${admins.length} admin(s)`
@@ -104,6 +102,8 @@ async function sendWhatsAppMessage(to: string, message: string) {
         To: `whatsapp:${to}`,
         Body: message,
       }),
+      // Never let a slow Twilio response hold up the customer's confirmation.
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!res.ok) {

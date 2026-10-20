@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // the order form: opening hours, the hourly limit, and how many orders are
 // already booked in each hour. Contains no customer information.
 export async function GET(req: NextRequest) {
-  const limit = rateLimit(`slots:${clientIp(req.headers)}`, 60, 10 * 60_000);
+  const limit = await rateLimit(`slots:${clientIp(req.headers)}`, 60, 10 * 60_000);
   if (!limit.ok) return tooManyRequests(limit.retryAfter);
 
   const date = new URL(req.url).searchParams.get("date");

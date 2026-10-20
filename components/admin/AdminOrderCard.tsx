@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { Order, OrderStatus } from "@/lib/types";
 import { formatPickup } from "@/lib/time";
+import { DELETABLE, STATUS_FLOW } from "@/lib/orderStatus";
 import { itemName, orderCardHtml, orderSummaryText } from "./orderText";
-
-const STATUS_OPTIONS: OrderStatus[] = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DELIVERED", "CANCELLED", "REJECTED"];
 
 // The one obvious next step for each stage — a single tap on a phone.
 const NEXT_STEP: Partial<Record<OrderStatus, { to: OrderStatus; label: string; style: string }>> = {
@@ -176,14 +175,14 @@ export default function AdminOrderCard({
             disabled={saving}
             className="rounded-md border border-sand bg-white px-2 py-1 text-xs text-charcoal disabled:opacity-60"
           >
-            {STATUS_OPTIONS.map((s) => (
+            {[order.status, ...STATUS_FLOW[order.status]].map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
             ))}
           </select>
         </label>
-        {onDelete && (
+        {onDelete && DELETABLE.includes(order.status) && (
           <button onClick={() => onDelete(order.id)} className="text-xs text-charcoal/40 hover:text-rose-dark hover:underline">
             Remove
           </button>

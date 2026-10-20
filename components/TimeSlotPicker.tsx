@@ -38,10 +38,21 @@ export default function TimeSlotPicker({
   const slots = buildSlots(openHour, closeHour);
   const fullHour = (time: string) => (counts[time.slice(0, 2)] || 0) >= capacityPerHour;
   const tooSoon = (time: string) => pickupInstantMs(date, time) < earliestMs;
-  const anyFree = slots.some((s) => !fullHour(s) && !tooSoon(s));
+  const firstFree = slots.find((s) => !fullHour(s) && !tooSoon(s));
+  const anyFree = Boolean(firstFree);
 
   return (
     <div>
+      {/* One-tap shortcut: most people just want the soonest slot. */}
+      {firstFree && !value && !loading && (
+        <button
+          type="button"
+          onClick={() => onChange(firstFree)}
+          className="mb-3 rounded-full border border-rose bg-rose-light/50 px-4 py-1.5 text-sm font-semibold text-rose-dark transition hover:bg-rose-light"
+        >
+          {t("order.earliest", { time: firstFree })}
+        </button>
+      )}
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4" role="radiogroup" aria-label={t("order.time")}>
         {slots.map((time) => {
           const full = fullHour(time);

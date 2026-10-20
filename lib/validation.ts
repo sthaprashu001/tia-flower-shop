@@ -23,6 +23,19 @@ export function isPhone(value: unknown): value is string {
   return typeof value === "string" && /^\+?[0-9][0-9\s-]{5,18}[0-9]$/.test(value.trim());
 }
 
+/**
+ * One canonical form per phone number, so "98-4123 4567", "+977 9841234567" and
+ * "9841234567" are all the same customer (needed for order tracking to match).
+ * Nepali numbers end up as the plain 10 digits; other countries keep "+<digits>".
+ */
+export function normalizePhone(value: string): string {
+  let s = value.trim().replace(/[\s\-().]/g, "");
+  if (s.startsWith("00")) s = `+${s.slice(2)}`;
+  if (s.startsWith("+977")) s = s.slice(4);
+  else if (s.startsWith("977") && s.length === 13) s = s.slice(3);
+  return s;
+}
+
 // International format used for WhatsApp notifications, e.g. +9779800000000.
 export function isWhatsappNumber(value: unknown): value is string {
   return typeof value === "string" && /^\+[0-9]{8,15}$/.test(value.trim());

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/CartProvider";
 import { useLang } from "@/components/LanguageProvider";
+import QuantityStepper from "@/components/QuantityStepper";
 import { leadTimeText } from "@/lib/i18n";
 import { Bouquet } from "@/lib/types";
 
@@ -75,13 +76,10 @@ export default function CartPage() {
                     </p>
                   )}
                 </div>
-                <input
-                  type="number"
-                  min={1}
+                <QuantityStepper
                   value={quantity}
-                  onChange={(e) => setQuantity(bouquetId, Number(e.target.value))}
-                  className="w-16 rounded-md border border-sand px-2 py-1 text-center"
-                  aria-label={`${t("order.quantityFor")} ${bouquet.name}`}
+                  onChange={(n) => setQuantity(bouquetId, n)}
+                  label={`${t("order.quantityFor")} ${bouquet.name}`}
                 />
                 <button
                   onClick={() => removeItem(bouquetId)}

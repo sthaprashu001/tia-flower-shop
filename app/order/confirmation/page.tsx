@@ -5,7 +5,8 @@ import Link from "next/link";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { useLang } from "@/components/LanguageProvider";
 import { Order } from "@/lib/types";
-import { formatPickup } from "@/lib/time";
+import { formatPickup, pickupInstantMs } from "@/lib/time";
+import { buildPickupIcs } from "@/lib/ics";
 
 export default function ConfirmationPage() {
   const { t, lang } = useLang();
@@ -30,6 +31,25 @@ export default function ConfirmationPage() {
     } catch {
       // Clipboard blocked — the number is still on screen to copy by hand.
     }
+  }
+
+  // Hand the pickup to the phone's calendar app (with a reminder 1 hour before).
+  function downloadCalendar() {
+    if (!order) return;
+    const ics = buildPickupIcs({
+      orderNumber: order.orderNumber,
+      startMs: pickupInstantMs(order.date, order.time),
+      meetingLocation: order.meetingLocation,
+      items: order.items.map((i) => `${i.name || i.bouquetId} x ${i.quantity}`),
+    });
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `flower-pickup-${order.orderNumber}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   if (!order) {
@@ -88,7 +108,7 @@ export default function ConfirmationPage() {
           <dt className="text-charcoal/60">{t("conf.status")}</dt>
           <dd>
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-              {order.status}
+              {t(`status.${order.status}`)}
             </span>
           </dd>
         </dl>
@@ -97,13 +117,29 @@ export default function ConfirmationPage() {
           {t("conf.willReach")} <strong>{order.phone}</strong> {t("conf.toConfirm")}
         </p>
 
+        <div className="mt-6 rounded-card bg-sand/30 p-4">
+          <p className="text-sm font-semibold text-charcoal">{t("conf.whatsNext")}</p>
+          <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-charcoal/80">
+            <li>{t("conf.step1")}</li>
+            <li>{t("conf.step2")}</li>
+            <li>{t("conf.step3")}</li>
+          </ol>
+        </div>
+
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
-            href="/order-status"
+            href={`/track-order?order=${encodeURIComponent(order.orderNumber)}`}
             className="inline-block rounded-full bg-charcoal px-5 py-2.5 text-sm font-semibold text-ivory hover:bg-charcoal/80"
           >
             {t("conf.track")}
           </Link>
+          <button
+            type="button"
+            onClick={downloadCalendar}
+            className="inline-block rounded-full border border-charcoal/20 px-5 py-2.5 text-sm font-semibold text-charcoal hover:border-rose"
+          >
+            {t("conf.addCalendar")}
+          </button>
           <WhatsAppButton
             message={`Hi! I just placed order #${order.orderNumber} on the website.`}
             label={t("conf.whatsapp")}

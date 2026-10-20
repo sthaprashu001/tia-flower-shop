@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
 import { hashPassword } from "@/lib/password";
-import { rateLimit } from "@/lib/rateLimit";
+import { clientIpFromPlain, rateLimit } from "@/lib/rateLimit";
 import { isEmail } from "@/lib/validation";
 import User from "@/models/User";
 
@@ -24,13 +24,6 @@ import User from "@/models/User";
 // password take about the same time (stops account-existence probing).
 let dummyHash: string | null = null;
 
-function ipFromRequest(req: unknown): string {
-  const headers = (req as { headers?: Record<string, string | string[] | undefined> } | undefined)?.headers;
-  const fwd = headers?.["x-forwarded-for"];
-  const value = Array.isArray(fwd) ? fwd[0] : fwd;
-  return value?.split(",")[0].trim() || "unknown";
-}
-
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt", maxAge: 60 * 60 * 8 }, // 8 hours, then log in again
   pages: {
@@ -50,9 +43,9 @@ export const authOptions: NextAuthOptions = {
         if (!isDatabaseConfigured()) return null;
 
         // Brute-force protection: 8 attempts per 15 minutes per (IP, email), 40 per IP.
-        const ip = ipFromRequest(req);
-        if (!rateLimit(`login:${ip}:${email}`, 8, 15 * 60_000).ok) return null;
-        if (!rateLimit(`login-ip:${ip}`, 40, 15 * 60_000).ok) return null;
+        const ip = clientIpFromPlain((req as { headers?: Record<string, string | string[] | undefined> } | undefined)?.headers);
+        if (!(await rateLimit(`login:${ip}:${email}`, 8, 15 * 60_000)).ok) return null;
+        if (!(await rateLimit(`login-ip:${ip}`, 40, 15 * 60_000)).ok) return null;
 
         await connectToDatabase();
         const user = await User.findOne({ email });

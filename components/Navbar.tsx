@@ -8,7 +8,7 @@ import T from "./T";
 
 const links = [
   { href: "/order", label: "nav.order" },
-  { href: "/order-status", label: "nav.track" },
+  { href: "/track-order", label: "nav.track" },
   { href: "/faq", label: "nav.faq" },
   { href: "/contact", label: "nav.contact" },
 ];

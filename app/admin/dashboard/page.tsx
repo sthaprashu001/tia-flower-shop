@@ -124,11 +124,14 @@ export default function AdminDashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (!res.ok) throw new Error("Could not save status.");
-    } catch {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(typeof data.error === "string" ? data.error : "Could not save — try again.");
+      }
+    } catch (err) {
       // Roll back on failure
       setOrders((prev) => prev.map((o) => (o.id === orderId && previous ? { ...o, status: previous } : o)));
-      setStatusError((e) => ({ ...e, [orderId]: "Could not save — try again." }));
+      setStatusError((e) => ({ ...e, [orderId]: err instanceof Error ? err.message : "Could not save — try again." }));
     } finally {
       setSavingStatus((s) => ({ ...s, [orderId]: false }));
     }
@@ -139,10 +142,13 @@ export default function AdminDashboardPage() {
 
     try {
       const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(typeof data.error === "string" ? data.error : "");
+      }
       setOrders((prev) => prev.filter((o) => o.id !== orderId));
-    } catch {
-      alert("Could not remove order — try again.");
+    } catch (err) {
+      alert(err instanceof Error && err.message ? err.message : "Could not remove order — try again.");
     }
   }
 

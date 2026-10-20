@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Bouquet } from "@/lib/types";
 import { useCart } from "@/components/CartProvider";
 import { useLang } from "@/components/LanguageProvider";
 import TimeSlotPicker from "@/components/TimeSlotPicker";
+import QuantityStepper from "@/components/QuantityStepper";
+import { saveMyOrder } from "@/lib/myOrders";
+import { isPhone } from "@/lib/validation";
 import { leadTimeText } from "@/lib/i18n";
 import {
   SHOP_UTC_OFFSET_MINUTES,
@@ -20,6 +23,15 @@ import {
 const CUSTOMER_KEY = "tia-customer"; // name / phone / meeting point, saved on this device only
 const LAST_ITEMS_KEY = "tia-last-items"; // items of the previous order, for "order the same again"
 const MIN_NOTICE_MINUTES = 30; // shortest time we need to prepare anything
+
+// One-tap meeting points (the text is still editable afterwards).
+const MEETING_SPOTS = [
+  { key: "order.spot.arrivals", en: "Arrivals exit" },
+  { key: "order.spot.departures", en: "Departures entrance" },
+  { key: "order.spot.goldenGate", en: "Golden gate" },
+  { key: "order.spot.parking", en: "Parking area" },
+  { key: "order.spot.busStop", en: "Bus stop" },
+];
 
 interface SlotData {
   counts: Record<string, number>;
@@ -47,6 +59,8 @@ function OrderForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   // Shop settings (opening hours, hourly limit, OPEN/BUSY/CLOSED) and the booked hours of the chosen date.
   const [settings, setSettings] = useState({ status: "OPEN", openHour: 6, closeHour: 22, capacityPerHour: 8 });
@@ -137,6 +151,18 @@ function OrderForm() {
     }
   }, [date, minDate]);
 
+  // Start with the earliest possible date already chosen, so the pickup times
+  // are visible straight away (one less step; still easy to change).
+  useEffect(() => {
+    if (!date && hydrated && !loadingBouquets && lines.length > 0) setDate(minDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, hydrated, loadingBouquets, lines.length, minDate]);
+
+  // Bring a new error message into view (it can be far from the button on a phone).
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [error]);
+
   // Booked hours for the chosen date.
   useEffect(() => {
     if (!date) return;
@@ -202,6 +228,11 @@ function OrderForm() {
       setError(t("order.unavailableError"));
       return;
     }
+    if (!isPhone(phone)) {
+      setPhoneTouched(true);
+      setError(t("order.phoneInvalid"));
+      return;
+    }
     if (!time) {
       setError(t("order.pickTimeError"));
       return;
@@ -233,6 +264,7 @@ function OrderForm() {
 
       try {
         sessionStorage.setItem("lastOrder", JSON.stringify(data.order));
+        saveMyOrder({ orderNumber: data.order.orderNumber, phone: data.order.phone, date: data.order.date, time: data.order.time });
         localStorage.setItem(
           LAST_ITEMS_KEY,
           JSON.stringify(lines.map((l) => ({ bouquetId: l.bouquetId, quantity: l.quantity })))
@@ -254,9 +286,27 @@ function OrderForm() {
   }
 
   const input = "mt-1 w-full rounded-md border border-sand px-3 py-2";
+  const locale = lang === "ne" ? "ne-NP" : "en-GB";
+  const phoneInvalid = phoneTouched && phone.trim() !== "" && !isPhone(phone);
+
+  // Today / Tomorrow / day after — the dates most people want, one tap each.
+  const today = shopToday(now);
+  const dateChoices = [0, 1, 2]
+    .map((n) => addDaysIso(minDate, n))
+    .filter((d) => d <= maxDate)
+    .map((d) => ({
+      value: d,
+      label:
+        d === today
+          ? t("order.today")
+          : d === addDaysIso(today, 1)
+          ? t("order.tomorrow")
+          : formatPickup(d, "00:00", locale).split(" · ")[0],
+    }));
+  const pickupSummary = time && date ? formatPickup(date, time, locale) : "";
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl px-4 py-10 pb-32 sm:pb-10">
       <h1 className="font-display text-3xl italic text-charcoal">{t("order.title")}</h1>
       <p className="mt-2 text-charcoal/70">{t("order.intro")}</p>
 
@@ -296,7 +346,7 @@ function OrderForm() {
       )}
 
       {lines.length > 0 && (
-        <form onSubmit={handleSubmit} className="mt-8 space-y-8">
+        <form id="order-form" onSubmit={handleSubmit} className="mt-8 space-y-8">
           {/* Cart summary */}
           <fieldset>
             <legend className="font-display text-lg text-charcoal">{t("order.yourBouquets")}</legend>
@@ -313,14 +363,10 @@ function OrderForm() {
                       <p className="text-sm font-medium text-charcoal">{bouquet.name}</p>
                       <p className="font-mono text-xs text-charcoal/60">Rs. {bouquet.price.toLocaleString("en-IN")}</p>
                     </div>
-                    <input
-                      type="number"
-                      min={1}
-                      max={50}
+                    <QuantityStepper
                       value={quantity}
-                      onChange={(e) => setQuantity(bouquetId, Number(e.target.value))}
-                      className="w-16 rounded-md border border-sand px-2 py-1 text-center"
-                      aria-label={`${t("order.quantityFor")} ${bouquet.name}`}
+                      onChange={(n) => setQuantity(bouquetId, n)}
+                      label={`${t("order.quantityFor")} ${bouquet.name}`}
                     />
                     <button
                       type="button"
@@ -384,9 +430,12 @@ function OrderForm() {
                 autoComplete="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                onBlur={() => setPhoneTouched(true)}
                 placeholder="98XXXXXXXX"
-                className={input}
+                aria-invalid={phoneInvalid}
+                className={`${input} ${phoneInvalid ? "border-rose-dark" : ""}`}
               />
+              {phoneInvalid && <p className="mt-1 text-xs text-rose-dark">{t("order.phoneInvalid")}</p>}
             </div>
           </fieldset>
 
@@ -409,6 +458,24 @@ function OrderForm() {
               <label className="text-sm font-medium text-charcoal" htmlFor="date">
                 {t("order.date")}
               </label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {dateChoices.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    aria-pressed={date === c.value}
+                    onClick={() => {
+                      setDate(c.value);
+                      setTime("");
+                    }}
+                    className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${
+                      date === c.value ? "border-rose bg-rose text-ivory" : "border-sand bg-white text-charcoal hover:border-rose"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
               <input
                 id="date"
                 required
@@ -421,6 +488,7 @@ function OrderForm() {
                   setTime("");
                 }}
                 className={`${input} sm:max-w-xs`}
+                aria-label={t("order.otherDate")}
               />
             </div>
 
@@ -450,6 +518,21 @@ function OrderForm() {
               <label className="text-sm font-medium text-charcoal" htmlFor="meetingLocation">
                 {t("order.meetingPoint")}
               </label>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-charcoal/60">{t("order.quickPick")}</span>
+                {MEETING_SPOTS.map((spot) => (
+                  <button
+                    key={spot.key}
+                    type="button"
+                    onClick={() => setMeetingLocation(spot.en)}
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                      meetingLocation === spot.en ? "border-rose bg-rose-light text-rose-dark" : "border-sand bg-white text-charcoal hover:border-rose"
+                    }`}
+                  >
+                    {t(spot.key)}
+                  </button>
+                ))}
+              </div>
               <input
                 id="meetingLocation"
                 required
@@ -494,6 +577,14 @@ function OrderForm() {
 
           {/* Total & submit */}
           <div className="rounded-card border border-sand bg-white p-4">
+            <p className="mb-3 border-b border-sand pb-3 text-sm text-charcoal/80">
+              <span className="font-semibold text-charcoal">{t("order.summaryTitle")}: </span>
+              {pickupSummary ? (
+                <>📅 {pickupSummary}{meetingLocation.trim() ? ` · 📍 ${meetingLocation.trim()}` : ""}</>
+              ) : (
+                <span className="text-charcoal/50">{t("order.summaryMissing")}</span>
+              )}
+            </p>
             <div className="flex items-center justify-between">
               <span className="font-medium text-charcoal">{t("order.total")}</span>
               <span className="font-mono text-lg font-bold text-rose-dark">Rs. {total.toLocaleString("en-IN")}</span>
@@ -507,7 +598,7 @@ function OrderForm() {
           </label>
 
           {error && (
-            <div className="rounded-card bg-rose-light px-4 py-3 text-sm text-rose-dark" role="alert">
+            <div ref={errorRef} className="rounded-card bg-rose-light px-4 py-3 text-sm text-rose-dark" role="alert">
               <p>{error}</p>
               {suggestions.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -538,11 +629,25 @@ function OrderForm() {
           <button
             type="submit"
             disabled={submitting || unavailable.length > 0}
-            className="w-full rounded-full bg-rose px-6 py-3 text-sm font-semibold text-ivory transition hover:bg-rose-dark disabled:opacity-60"
+            className="hidden w-full rounded-full bg-rose px-6 py-3 text-sm font-semibold text-ivory transition hover:bg-rose-dark disabled:opacity-60 sm:block"
           >
             {submitting ? t("order.submitting") : t("order.submit")}
           </button>
         </form>
+      )}
+
+      {/* Phone: the total and the submit button stay in reach while scrolling the form. */}
+      {lines.length > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-sand bg-ivory/95 px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur sm:hidden">
+          <button
+            type="submit"
+            form="order-form"
+            disabled={submitting || unavailable.length > 0}
+            className="w-full rounded-full bg-rose px-6 py-3 text-sm font-semibold text-ivory transition hover:bg-rose-dark disabled:opacity-60"
+          >
+            {submitting ? t("order.submitting") : t("order.submitTotal", { total: total.toLocaleString("en-IN") })}
+          </button>
+        </div>
       )}
     </div>
   );

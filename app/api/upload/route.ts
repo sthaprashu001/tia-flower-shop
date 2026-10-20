@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if ("error" in auth) return auth.error;
 
-  const limit = rateLimit(`upload:${auth.user.id}`, 30, 10 * 60_000);
+  const limit = await rateLimit(`upload:${auth.user.id}`, 30, 10 * 60_000);
   if (!limit.ok) return tooManyRequests(limit.retryAfter);
 
   const hasOidcBlob = Boolean(process.env.BLOB_STORE_ID);
