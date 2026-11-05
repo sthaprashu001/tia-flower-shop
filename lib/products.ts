@@ -7,11 +7,10 @@ import Product from "@/models/Product";
 /**
  * Single source of truth for "what bouquets exist" across the whole app —
  * homepage, listing page, product detail page, and order pricing/validation
- * all call these two functions instead of importing lib/data.ts directly.
+ * all call these functions instead of importing lib/data.ts directly.
  *
  * When MONGODB_URI is set, this reads from the database. Otherwise it
- * transparently falls back to the mock catalog in lib/data.ts, so local
- * development without a database still works exactly as before.
+ * transparently falls back to the mock catalog in lib/data.ts.
  */
 
 interface ProductDoc {
@@ -20,6 +19,7 @@ interface ProductDoc {
   price: number;
   description?: string;
   image?: string;
+  images?: string[];
   available: boolean;
   customizable: boolean;
   category?: string;
@@ -30,12 +30,14 @@ interface ProductDoc {
 }
 
 function serialize(doc: ProductDoc): Bouquet {
+  const images = Array.isArray(doc.images) && doc.images.length > 0 ? doc.images : doc.image ? [doc.image] : [];
   return {
     id: String(doc._id),
     name: doc.name,
     price: doc.price,
     description: doc.description || "",
-    image: doc.image || "",
+    image: images[0] || doc.image || "",
+    images,
     available: doc.available,
     customizable: doc.customizable,
     category: doc.category || "Bouquets", // default to "Bouquets" for backward compatibility
@@ -82,7 +84,6 @@ export async function getBouquetById(id: string): Promise<Bouquet | undefined> {
  */
 export async function getCategories(): Promise<string[]> {
   if (!isDatabaseConfigured()) {
-    // Return distinct categories from mock data
     const categories = new Set(mockBouquets.map((b) => b.category || "Bouquets"));
     return Array.from(categories).sort();
   }
@@ -90,7 +91,6 @@ export async function getCategories(): Promise<string[]> {
   try {
     await connectToDatabase();
     const categories = await Product.distinct("category").lean<string[]>();
-    // Filter out empty/null values and ensure default is included
     const filtered = categories.filter((c) => c && c.trim());
     if (!filtered.includes("Bouquets")) filtered.unshift("Bouquets");
     return filtered.sort();

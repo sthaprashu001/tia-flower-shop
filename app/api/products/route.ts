@@ -20,6 +20,15 @@ async function callerIsAdmin(): Promise<boolean> {
   return !("error" in auth);
 }
 
+function withImages<T extends { image?: string; images?: string[] }>(item: T): T & { images: string[] } {
+  return { ...item, images: item.images && item.images.length ? item.images : item.image ? [item.image] : [] };
+}
+
+function stripCost<T extends object>(item: T): Omit<T, "cost"> {
+  const { cost: _cost, ...rest } = item as T & { cost?: unknown };
+  return rest;
+}
+
 // GET /api/products — list bouquets.
 // Falls back to the mock data in lib/data.ts until MONGODB_URI is set.
 export async function GET() {
@@ -28,7 +37,7 @@ export async function GET() {
   if (!isDatabaseConfigured()) {
     return NextResponse.json({
       source: "mock",
-      products: bouquets.map((b) => (isAdmin ? b : stripCost(b))),
+      products: bouquets.map((b) => withImages(isAdmin ? b : stripCost(b))),
     });
   }
 
@@ -36,41 +45,38 @@ export async function GET() {
     await connectToDatabase();
     const rawProducts = await Product.find().lean();
     // Normalize all products to have consistent structure
-    const products = rawProducts.map((p) => ({
-      id: String(p._id),
-      _id: String(p._id),
-      name: p.name || "",
-      price: p.price || 0,
-      description: p.description || "",
-      image: p.image || "",
-      available: p.available !== false,
-      customizable: p.customizable === true,
-      ...(isAdmin ? { cost: p.cost || 0 } : {}),
-      category: p.category || "Bouquets",
-      featured: p.featured === true, // Explicitly convert to boolean
-      featuredOrder: Number(p.featuredOrder) || 0,
-      leadTimeMinutes: Number(p.leadTimeMinutes) || 0,
-      todayPick: p.todayPick === true,
-    }));
+    const products = rawProducts.map((p) => {
+      const images: string[] =
+        Array.isArray(p.images) && p.images.length > 0 ? p.images : p.image ? [p.image] : [];
+      return {
+        id: String(p._id),
+        _id: String(p._id),
+        name: p.name || "",
+        price: p.price || 0,
+        description: p.description || "",
+        image: images[0] || p.image || "",
+        images,
+        available: p.available !== false,
+        customizable: p.customizable === true,
+        ...(isAdmin ? { cost: p.cost || 0 } : {}),
+        category: p.category || "Bouquets",
+        featured: p.featured === true,
+        featuredOrder: Number(p.featuredOrder) || 0,
+        leadTimeMinutes: Number(p.leadTimeMinutes) || 0,
+        todayPick: p.todayPick === true,
+      };
+    });
     return NextResponse.json({ source: "database", products });
   } catch (err) {
     console.error("Failed to load products from database:", err);
     return NextResponse.json(
-      { source: "mock", products: bouquets.map(stripCost), warning: "Database unreachable, showing mock data" },
+      { source: "mock", products: bouquets.map((b) => withImages(stripCost(b))), warning: "Database unreachable, showing mock data" },
       { status: 200 }
     );
   }
 }
 
-function stripCost<T extends object>(item: T): Omit<T, "cost"> {
-  const { cost: _cost, ...rest } = item as T & { cost?: unknown };
-  return rest;
-}
-
 // POST /api/products — create a new bouquet. Requires a logged-in admin.
-// Requires MONGODB_URI to be set; the mock catalog in lib/data.ts is
-// read-only code, so there is nothing to write to until the database
-// is connected.
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if ("error" in auth) return auth.error;
@@ -97,6 +103,7 @@ export async function POST(req: NextRequest) {
     const product = await Product.create({
       description: "",
       image: "",
+      images: [],
       available: true,
       customizable: false,
       cost: 0,

@@ -5,7 +5,8 @@ export interface Bouquet {
   name: string;
   price: number; // in NPR
   description: string;
-  image: string;
+  image: string; // cover photo
+  images?: string[]; // slider photos (first = cover)
   available: boolean;
   customizable: boolean;
   category: string; // "Bouquets", "Khata", "Flags", etc.
@@ -14,6 +15,12 @@ export interface Bouquet {
   cost?: number; // admin-only; never sent to customers
   leadTimeMinutes?: number; // customers must order this many minutes before pickup (0 = no minimum)
   todayPick?: boolean; // admin-curated: show in the homepage "Today's items" section
+}
+
+/** All photos of a product for sliders; falls back to the single cover image. */
+export function productImages(p: { image?: string; images?: string[] }): string[] {
+  if (p.images && p.images.length > 0) return p.images.filter(Boolean);
+  return p.image ? [p.image] : [];
 }
 
 export interface OrderItem {

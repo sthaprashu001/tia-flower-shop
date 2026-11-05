@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { Metadata } from "next";
 import { getBouquetById } from "@/lib/products";
+import { productImages } from "@/lib/types";
 import { siteUrl } from "@/lib/site";
 import AddToCartButton from "@/components/AddToCartButton";
 import LeadTimeNote from "@/components/LeadTimeNote";
+import ProductGallery from "@/components/ProductGallery";
 import T from "@/components/T";
 
 // Bouquets can be added/edited any time from the admin panel, so this page
@@ -23,6 +24,7 @@ export async function generateMetadata({
   const description = bouquet.description
     ? `${bouquet.description} Fresh, delivered near Tribhuvan International Airport, Kathmandu.`
     : `${bouquet.name} — fresh bouquet delivered near Tribhuvan International Airport, Kathmandu.`;
+  const images = productImages(bouquet);
 
   return {
     title: `${bouquet.name} — Rs. ${bouquet.price}`,
@@ -30,7 +32,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${bouquet.name} | TIA Flower Shop`,
       description,
-      images: bouquet.image ? [{ url: bouquet.image }] : undefined,
+      images: images.length ? images.slice(0, 4).map((url) => ({ url })) : undefined,
     },
   };
 }
@@ -39,6 +41,8 @@ export default async function BouquetDetailPage({ params }: { params: { id: stri
   const bouquet = await getBouquetById(params.id);
   if (!bouquet) return notFound();
 
+  const images = productImages(bouquet);
+
   // Product rich-result: lets this bouquet show its price (and stock status)
   // directly in Google search results, not just as a plain blue link.
   const jsonLd = {
@@ -46,7 +50,7 @@ export default async function BouquetDetailPage({ params }: { params: { id: stri
     "@type": "Product",
     name: bouquet.name,
     description: bouquet.description || `${bouquet.name} — fresh bouquet near TIA, Kathmandu.`,
-    image: bouquet.image ? [new URL(bouquet.image, siteUrl).toString()] : undefined,
+    image: images.length ? images.map((src) => new URL(src, siteUrl).toString()) : undefined,
     category: bouquet.category,
     offers: {
       "@type": "Offer",
@@ -72,16 +76,7 @@ export default async function BouquetDetailPage({ params }: { params: { id: stri
       </Link>
 
       <div className="mt-4 grid gap-8 sm:grid-cols-2">
-        <div className="relative aspect-square overflow-hidden rounded-card border border-sand bg-sand">
-          <Image
-            src={bouquet.image}
-            alt={`${bouquet.name} — fresh bouquet delivery near TIA, Kathmandu`}
-            fill
-            sizes="(max-width: 640px) 100vw, 50vw"
-            className="object-cover"
-            priority
-          />
-        </div>
+        <ProductGallery images={images} alt={`${bouquet.name} — fresh bouquet delivery near TIA, Kathmandu`} />
 
         <div>
           <h1 className="font-display text-3xl italic text-charcoal">{bouquet.name}</h1>

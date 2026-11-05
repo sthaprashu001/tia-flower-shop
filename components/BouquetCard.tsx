@@ -1,11 +1,12 @@
 import Link from "next/link";
-import Image from "next/image";
-import { Bouquet } from "@/lib/types";
+import { Bouquet, productImages } from "@/lib/types";
 import AddToCartButton from "./AddToCartButton";
+import CardImageSlider from "./CardImageSlider";
 import LeadTimeNote from "./LeadTimeNote";
 import T from "./T";
 
 export default function BouquetCard({ bouquet }: { bouquet: Bouquet }) {
+  const images = productImages(bouquet);
   return (
     <Link
       href={`/bouquets/${bouquet.id}`}
@@ -14,12 +15,10 @@ export default function BouquetCard({ bouquet }: { bouquet: Bouquet }) {
       }`}
     >
       <div className="relative aspect-square w-full overflow-hidden bg-sand">
-        <Image
-          src={bouquet.image}
+        <CardImageSlider
+          images={images}
           alt={`${bouquet.name} — fresh bouquet delivery near TIA, Kathmandu`}
-          fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-cover transition group-hover:scale-105"
         />
         {!bouquet.available && (
           <span className="absolute right-2 top-2 rounded-full bg-charcoal/80 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-ivory">

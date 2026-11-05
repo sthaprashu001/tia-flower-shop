@@ -4,19 +4,19 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LEAD_TIME_PRESETS, leadTimeLabel } from "@/lib/time";
+import ImageManager from "@/components/admin/ImageManager";
 
 /**
  * Admin product management.
  *
- * Lets you add, edit, and delete bouquets with an image upload — no code
- * edits or redeploys needed. Requires MONGODB_URI (Phase 2) to actually
+ * Lets you add, edit, and delete bouquets with multi-photo upload — no code
+ * edits or redeploys needed. Requires MONGODB_URI to actually
  * save anything; until then /api/products serves the read-only mock data
  * in lib/data.ts and this page will tell you so.
  *
- * Auth is a real session (Phase 3, next-auth) — middleware.ts blocks
- * this route for anyone not logged in, and every write API call below
- * relies on the session cookie sent automatically with same-origin
- * requests, no key needed.
+ * Auth is a real session (next-auth) — middleware.ts blocks this route for
+ * anyone not logged in, and every write API call below relies on the session
+ * cookie sent automatically with same-origin requests.
  */
 
 interface AdminProduct {
@@ -25,6 +25,7 @@ interface AdminProduct {
   price: number;
   description: string;
   image: string;
+  images?: string[];
   available: boolean;
   customizable: boolean;
   cost?: number;
@@ -33,32 +34,6 @@ interface AdminProduct {
   featuredOrder?: number;
   leadTimeMinutes?: number;
   todayPick?: boolean;
-}
-
-/**
- * Shrinks a big phone photo before uploading (max 1600px, JPEG). Faster to
- * upload, faster for customers to load, and keeps it under the upload limit.
- * If anything goes wrong the original file is used unchanged.
- */
-async function shrinkImage(file: File): Promise<File> {
-  try {
-    if (file.size < 300 * 1024) return file;
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.fillStyle = "#ffffff"; // PNGs with transparency get a white background
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
-    if (!blob || blob.size >= file.size) return file;
-    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
-  } catch {
-    return file;
-  }
 }
 
 const PRESET_MINUTES = LEAD_TIME_PRESETS.map((p) => p.minutes);
@@ -78,7 +53,7 @@ const emptyForm = {
   name: "",
   price: "",
   description: "",
-  image: "",
+  images: [] as string[],
   available: true,
   customizable: false,
   cost: "",
@@ -107,7 +82,7 @@ export default function AdminProductsPage() {
   const [customAmount, setCustomAmount] = useState("1");
   const [customUnit, setCustomUnit] = useState<LeadUnit>("hours");
   const [toggling, setToggling] = useState<Record<string, boolean>>({});
-  
+
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
@@ -147,7 +122,7 @@ export default function AdminProductsPage() {
       name: p.name,
       price: String(p.price),
       description: p.description,
-      image: p.image,
+      images: p.images && p.images.length > 0 ? p.images : p.image ? [p.image] : [],
       available: p.available,
       customizable: p.customizable,
       cost: p.cost ? String(p.cost) : "",
@@ -173,29 +148,6 @@ export default function AdminProductsPage() {
     setFormError(null);
   }
 
-  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    setFormError(null);
-    try {
-      const body = new FormData();
-      body.append("file", await shrinkImage(file));
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed.");
-      setForm((f) => ({ ...f, image: data.url }));
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Upload failed.");
-    } finally {
-      setUploading(false);
-    }
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -214,7 +166,8 @@ export default function AdminProductsPage() {
       name: form.name.trim(),
       price,
       description: form.description.trim(),
-      image: form.image,
+      image: form.images[0] || "", // cover = first slider photo
+      images: form.images,
       available: form.available,
       customizable: form.customizable,
       cost: form.cost ? Number(form.cost) : 0,
@@ -395,23 +348,13 @@ export default function AdminProductsPage() {
 
           <div className="sm:col-span-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
-              Photo
+              Photos (slider)
             </label>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleImageChange}
-              className="mt-1 w-full text-sm"
+            <ImageManager
+              images={form.images}
+              onChange={(images) => setForm((f) => ({ ...f, images }))}
+              onBusyChange={setUploading}
             />
-            {uploading && <p className="mt-1 text-sm text-charcoal/60">Uploading…</p>}
-            {form.image && !uploading && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={form.image}
-                alt="Preview"
-                className="mt-2 h-24 w-24 rounded-md border border-sand object-cover"
-              />
-            )}
           </div>
 
           <div className="sm:col-span-2">
@@ -509,7 +452,7 @@ export default function AdminProductsPage() {
               works&quot;), on both phone and desktop. Set a number 1–10 to include this item — lower numbers
               are placed first. Leave it at 0 to leave this item out. Works for any category (bouquets, khata,
               flags), so you decide the exact mix. If no product has a number set, we show a default mix
-              automatically.
+              automatically. The cover (first) photo is the one shown there.
             </p>
           </div>
 
@@ -554,7 +497,7 @@ export default function AdminProductsPage() {
             disabled={saving || uploading || dbNotConnected}
             className="rounded-full bg-charcoal px-6 py-2.5 text-sm font-semibold text-ivory hover:bg-charcoal/80 disabled:opacity-60"
           >
-            {saving ? "Saving…" : editingId ? "Save changes" : "Add product"}
+            {saving ? "Saving…" : uploading ? "Uploading photos…" : editingId ? "Save changes" : "Add product"}
           </button>
           {editingId && (
             <button
@@ -640,102 +583,112 @@ export default function AdminProductsPage() {
 
           return (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {filtered.map((p) => (
-            <div
-              key={p._id}
-              className="flex gap-3 rounded-card border border-sand bg-white p-4"
-            >
-              {p.image && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={p.image}
-                  alt={p.name}
-                  className="h-16 w-16 flex-shrink-0 rounded-md object-cover"
-                />
-              )}
-              <div className="flex-1">
-                <p className="font-semibold text-charcoal">{p.name}</p>
-                <p className="text-sm text-charcoal/60">Rs. {p.price.toLocaleString("en-IN")}</p>
-                <div className="mt-1 flex gap-2 items-center">
-                  <span className="inline-block rounded-full bg-sage-light px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-sage-dark">
-                    {p.category || "Bouquets"}
-                  </span>
-                  {p.featured && (
-                    <span className="inline-block rounded-full bg-rose/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-rose-dark">
-                      Homepage stack {p.featuredOrder && `(#${p.featuredOrder})`}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-xs text-charcoal/50">
-                  {p.customizable ? "Customizable" : ""}
-                  {p.customizable && (p.leadTimeMinutes || 0) > 0 ? " · " : ""}
-                  {(p.leadTimeMinutes || 0) > 0 ? `Order ${leadTimeLabel(p.leadTimeMinutes || 0)} ahead` : ""}
-                </p>
-                {!dbNotConnected && (
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={p.available}
-                    aria-label={`${p.name} available`}
-                    disabled={toggling[p._id]}
-                    onClick={() => handleToggleAvailable(p)}
-                    className="mt-2 flex items-center gap-2 disabled:opacity-60"
+              {filtered.map((p) => {
+                const photoCount = p.images && p.images.length > 0 ? p.images.length : p.image ? 1 : 0;
+                return (
+                  <div
+                    key={p._id}
+                    className="flex gap-3 rounded-card border border-sand bg-white p-4"
                   >
-                    <span
-                      className={`relative inline-block h-6 w-11 rounded-full transition ${
-                        p.available ? "bg-sage" : "bg-charcoal/25"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
-                          p.available ? "left-[1.375rem]" : "left-0.5"
-                        }`}
-                      />
-                    </span>
-                    <span className={`text-xs font-semibold ${p.available ? "text-sage-dark" : "text-charcoal/50"}`}>
-                      {p.available ? "Available" : "Sold out"}
-                    </span>
-                  </button>
-                )}
-                {!dbNotConnected && (
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={p.todayPick ?? false}
-                    aria-label={`${p.name} today's pick`}
-                    disabled={toggling[`pick-${p._id}`]}
-                    onClick={() => handleToggleTodayPick(p)}
-                    className="mt-2 flex items-center gap-2 disabled:opacity-60"
-                  >
-                    <span
-                      className={`relative inline-block h-6 w-11 rounded-full transition ${
-                        p.todayPick ? "bg-rose" : "bg-charcoal/25"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
-                          p.todayPick ? "left-[1.375rem]" : "left-0.5"
-                        }`}
-                      />
-                    </span>
-                    <span className={`text-xs font-semibold ${p.todayPick ? "text-rose-dark" : "text-charcoal/50"}`}>
-                      {p.todayPick ? "Today's pick" : "Not in today's items"}
-                    </span>
-                  </button>
-                )}
-                {!dbNotConnected && (
-                  <div className="mt-2 flex gap-3 text-sm">
-                    <button onClick={() => startEdit(p)} className="text-rose-dark hover:underline">
-                      Edit
-                    </button>
-                    <button onClick={() => handleDelete(p._id)} className="text-charcoal/60 hover:text-rose-dark hover:underline">
-                      Delete
-                    </button>
+                    {p.image && (
+                      <div className="relative h-16 w-16 flex-shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={p.image}
+                          alt={p.name}
+                          className="h-16 w-16 rounded-md object-cover"
+                        />
+                        {photoCount > 1 && (
+                          <span className="absolute -bottom-1 -right-1 rounded-full bg-charcoal px-1.5 py-0.5 text-[10px] font-semibold text-ivory">
+                            {photoCount}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <p className="font-semibold text-charcoal">{p.name}</p>
+                      <p className="text-sm text-charcoal/60">Rs. {p.price.toLocaleString("en-IN")}</p>
+                      <div className="mt-1 flex gap-2 items-center">
+                        <span className="inline-block rounded-full bg-sage-light px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-sage-dark">
+                          {p.category || "Bouquets"}
+                        </span>
+                        {p.featured && (
+                          <span className="inline-block rounded-full bg-rose/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-rose-dark">
+                            Homepage stack {p.featuredOrder && `(#${p.featuredOrder})`}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-charcoal/50">
+                        {p.customizable ? "Customizable" : ""}
+                        {p.customizable && (p.leadTimeMinutes || 0) > 0 ? " · " : ""}
+                        {(p.leadTimeMinutes || 0) > 0 ? `Order ${leadTimeLabel(p.leadTimeMinutes || 0)} ahead` : ""}
+                      </p>
+                      {!dbNotConnected && (
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={p.available}
+                          aria-label={`${p.name} available`}
+                          disabled={toggling[p._id]}
+                          onClick={() => handleToggleAvailable(p)}
+                          className="mt-2 flex items-center gap-2 disabled:opacity-60"
+                        >
+                          <span
+                            className={`relative inline-block h-6 w-11 rounded-full transition ${
+                              p.available ? "bg-sage" : "bg-charcoal/25"
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                                p.available ? "left-[1.375rem]" : "left-0.5"
+                              }`}
+                            />
+                          </span>
+                          <span className={`text-xs font-semibold ${p.available ? "text-sage-dark" : "text-charcoal/50"}`}>
+                            {p.available ? "Available" : "Sold out"}
+                          </span>
+                        </button>
+                      )}
+                      {!dbNotConnected && (
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={p.todayPick ?? false}
+                          aria-label={`${p.name} today's pick`}
+                          disabled={toggling[`pick-${p._id}`]}
+                          onClick={() => handleToggleTodayPick(p)}
+                          className="mt-2 flex items-center gap-2 disabled:opacity-60"
+                        >
+                          <span
+                            className={`relative inline-block h-6 w-11 rounded-full transition ${
+                              p.todayPick ? "bg-rose" : "bg-charcoal/25"
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                                p.todayPick ? "left-[1.375rem]" : "left-0.5"
+                              }`}
+                            />
+                          </span>
+                          <span className={`text-xs font-semibold ${p.todayPick ? "text-rose-dark" : "text-charcoal/50"}`}>
+                            {p.todayPick ? "Today's pick" : "Not in today's items"}
+                          </span>
+                        </button>
+                      )}
+                      {!dbNotConnected && (
+                        <div className="mt-2 flex gap-3 text-sm">
+                          <button onClick={() => startEdit(p)} className="text-rose-dark hover:underline">
+                            Edit
+                          </button>
+                          <button onClick={() => handleDelete(p._id)} className="text-charcoal/60 hover:text-rose-dark hover:underline">
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-              ))}
+                );
+              })}
             </div>
           );
         })()}

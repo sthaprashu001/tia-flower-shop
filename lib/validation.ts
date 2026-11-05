@@ -56,6 +56,8 @@ export function isSafeImageUrl(value: unknown): value is string {
   }
 }
 
+export const MAX_PRODUCT_IMAGES = 8;
+
 function num(value: unknown, min: number, max: number): number | null {
   return typeof value === "number" && Number.isFinite(value) && value >= min && value <= max ? value : null;
 }
@@ -92,6 +94,21 @@ export function parseProductFields(
   if ("image" in b) {
     if (!isSafeImageUrl(b.image)) return { error: "Image must be uploaded through the admin panel." };
     data.image = b.image;
+  }
+  if ("images" in b) {
+    if (!Array.isArray(b.images) || b.images.length > MAX_PRODUCT_IMAGES) {
+      return { error: `You can add up to ${MAX_PRODUCT_IMAGES} photos per product.` };
+    }
+    const list: string[] = [];
+    for (const u of b.images) {
+      if (typeof u !== "string" || u === "" || !isSafeImageUrl(u)) {
+        return { error: "Photos must be uploaded through the admin panel." };
+      }
+      if (!list.includes(u)) list.push(u);
+    }
+    data.images = list;
+    // The cover photo always follows the first slider photo.
+    if (!("image" in b)) data.image = list[0] || "";
   }
   for (const flag of ["available", "customizable", "featured", "todayPick"] as const) {
     if (flag in b) {
