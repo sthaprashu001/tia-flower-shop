@@ -5,7 +5,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import { useLang } from "@/components/LanguageProvider";
 import { dictionary } from "@/lib/i18n";
 
-const QUESTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const QUESTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 // FAQPage rich result: pulled from the same English copy shown on the page
 // (not re-typed), so it can't drift out of sync with what customers read.

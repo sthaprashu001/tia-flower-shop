@@ -25,6 +25,76 @@ export const dictionary: Record<string, Entry> = {
   "sticky.viewCart": { en: "View cart", ne: "कार्ट हेर्नुहोस्" },
   "sticky.items": { en: "{n} in cart", ne: "कार्टमा {n}" },
 
+  // ---- homepage
+  "home.hero.title": {
+    en: "Flowers for arrivals & farewells.",
+    ne: "आगमन र बिदाइका लागि फूलहरू।",
+  },
+  "home.hero.body": {
+    en: "Sending someone abroad or welcoming them home? Choose your flowers, pick a time, and we'll have them ready near TIA when you need them.",
+    ne: "कसैलाई विदेश पठाउँदै हुनुहुन्छ वा घर स्वागत गर्दै हुनुहुन्छ? फूल छान्नुहोस्, समय रोज्नुहोस्, र तपाईंलाई चाहिने बेलामा हामी TIA नजिकै तयार राख्छौं।",
+  },
+  "home.hero.note": {
+    en: "We’re an online-only florist. Every order is prepared fresh for your pickup time, and we hand it to you at an agreed spot near the terminal. No delivery fee.",
+    ne: "हामी अनलाइन मात्र चल्ने फूल पसल हौं। हरेक अर्डर तपाईंले रोजेको पिकअप समयका लागि ताजा तयार गरिन्छ, र टर्मिनल नजिकको तय गरिएको ठाउँमा हामी तपाईंलाई हस्तान्तरण गर्छौं। डेलिभरी शुल्क छैन।",
+  },
+  "home.cta.browse": { en: "See today's items", ne: "आजका सामान हेर्नुहोस्" },
+  "home.cta.whatsapp": { en: "Ask on WhatsApp", ne: "WhatsApp मा सोध्नुहोस्" },
+  "home.cta.track": { en: "Already ordered? Track your order →", ne: "अर्डर गरिसक्नुभयो? अर्डर ट्र्याक गर्नुहोस् →" },
+  "home.empty": {
+    en: "Fresh items are being added — message us on WhatsApp to see what's available today.",
+    ne: "ताजा सामान थपिँदैछ — आज के उपलब्ध छ हेर्न WhatsApp मा सन्देश पठाउनुहोस्।",
+  },
+  "home.trust1.title": { en: "Confirmed on WhatsApp", ne: "WhatsApp मा पक्का" },
+  "home.trust1.body": {
+    en: "We confirm every order with you before pickup.",
+    ne: "पिकअपअघि हामी हरेक अर्डर तपाईंसँग पक्का गर्छौं।",
+  },
+  "home.trust2.title": { en: "Free handover", ne: "निःशुल्क हस्तान्तरण" },
+  "home.trust2.body": {
+    en: "No delivery fee — we meet you near the terminal.",
+    ne: "डेलिभरी शुल्क छैन — हामी टर्मिनल नजिकै भेट्छौं।",
+  },
+  "home.trust3.title": { en: "Track your order", ne: "अर्डर ट्र्याक गर्नुहोस्" },
+  "home.trust3.body": {
+    en: "You get an order number and can check its status any time.",
+    ne: "तपाईंले अर्डर नम्बर पाउनुहुन्छ र जुनसुकै बेला स्थिति हेर्न सक्नुहुन्छ।",
+  },
+  "home.hours": {
+    en: "Pickups {open}–{close} (Kathmandu time). Need a change? Message us on WhatsApp.",
+    ne: "पिकअप {open}–{close} (काठमाडौं समय)। केही बदल्नुपर्‍यो? WhatsApp मा सन्देश पठाउनुहोस्।",
+  },
+  "home.faqLink": { en: "Read the FAQ", ne: "सोधिने प्रश्न पढ्नुहोस्" },
+  "home.how.title": { en: "How ordering works", ne: "अर्डर कसरी गर्ने" },
+  "home.step1.title": { en: "Choose", ne: "छान्नुहोस्" },
+  "home.step1.body": {
+    en: "Browse today's items and prices.",
+    ne: "आजका सामान र मूल्य हेर्नुहोस्।",
+  },
+  "home.step2.title": { en: "Pick time & place", ne: "समय र ठाउँ रोज्नुहोस्" },
+  "home.step2.body": {
+    en: "Choose when you'll be near TIA and where to meet.",
+    ne: "TIA नजिक कहिले हुनुहुन्छ र कहाँ भेट्ने रोज्नुहोस्।",
+  },
+  "home.step3.title": { en: "We confirm", ne: "हामी पक्का गर्छौं" },
+  "home.step3.body": {
+    en: "We confirm your order and details with you on WhatsApp.",
+    ne: "हामी WhatsApp मा तपाईंको अर्डर र विवरण पक्का गर्छौं।",
+  },
+  "home.step4.title": { en: "Meet & receive", ne: "भेटेर बुझ्नुहोस्" },
+  "home.step4.body": {
+    en: "We hand it to you fresh at the agreed spot. Free, no delivery cost.",
+    ne: "तय गरिएको ठाउँमा ताजा हस्तान्तरण गर्छौं। निःशुल्क, डेलिभरी खर्च छैन।",
+  },
+  "home.today.title": { en: "Today's items", ne: "आजका सामान" },
+  "home.today.all": { en: "View all →", ne: "सबै हेर्नुहोस् →" },
+  "home.meet.title": { en: "Meeting you near TIA", ne: "TIA नजिकै भेट्छौं" },
+  "home.meet.body": {
+    en: "Tell us your preferred meeting point, date and pickup time when you order, and we'll confirm the exact spot with you on WhatsApp. We meet you near the terminal — never inside restricted airport areas. Please allow at least 30 minutes' notice so we can prepare it fresh; some items need more, and that is shown on the product.",
+    ne: "अर्डर गर्दा आफूलाई मन पर्ने भेटघाट स्थान, मिति र पिकअप समय बताउनुहोस्, र सही ठाउँ हामी WhatsApp मा तपाईंसँग पक्का गर्छौं। हामी टर्मिनल नजिकै भेट्छौं — विमानस्थलको प्रतिबन्धित क्षेत्रभित्र कहिल्यै होइन। ताजा तयार गर्न कम्तीमा 30 मिनेट अघि सूचना दिनुहोस्; केही सामानलाई बढी समय चाहिन्छ, त्यो उत्पादनमा देखिन्छ।",
+  },
+  "home.meet.order": { en: "Place an order", ne: "अर्डर गर्नुहोस्" },
+
   // ---- catalog
   "cat.allProducts": { en: "All Products", ne: "सबै उत्पादनहरू" },
   "cat.all": { en: "All", ne: "सबै" },
@@ -216,8 +286,8 @@ export const dictionary: Record<string, Entry> = {
   },
   "faq.q1": { en: "Where do I collect my order?", ne: "मैले अर्डर कहाँबाट लिने?" },
   "faq.a1": {
-    en: "Bouquets are prepared about 2 minutes' walk from Tribhuvan International Airport. We meet you near the terminal — never inside restricted airport areas. We confirm the exact spot with you on WhatsApp for every order.",
-    ne: "गुलदस्ता त्रिभुवन अन्तर्राष्ट्रिय विमानस्थलबाट करिब 2 मिनेटको पैदल दूरीमा तयार गरिन्छ। हामी टर्मिनल नजिकै भेट्छौं — विमानस्थलको प्रतिबन्धित क्षेत्रभित्र कहिल्यै होइन। हरेक अर्डरको सही ठाउँ WhatsApp मा पक्का गरिन्छ।",
+    en: "We hand your order to you near the terminal of Tribhuvan International Airport — never inside restricted airport areas. You choose a meeting point when you order, and we confirm the exact spot with you on WhatsApp.",
+    ne: "हामी तपाईंको अर्डर त्रिभुवन अन्तर्राष्ट्रिय विमानस्थलको टर्मिनल नजिकै हस्तान्तरण गर्छौं — विमानस्थलको प्रतिबन्धित क्षेत्रभित्र कहिल्यै होइन। अर्डर गर्दा तपाईं भेटघाट स्थान रोज्नुहुन्छ, र सही ठाउँ हामी WhatsApp मा पक्का गर्छौं।",
   },
   "faq.q2": { en: "How do I place an order?", ne: "अर्डर कसरी गर्ने?" },
   "faq.a2": {
@@ -258,6 +328,11 @@ export const dictionary: Record<string, Entry> = {
   "faq.a9": {
     en: "Sold-out products can't be ordered today. Check back later, or ask us on WhatsApp and we'll suggest an alternative.",
     ne: "सकिएका उत्पादन आज अर्डर गर्न मिल्दैन। पछि फेरि हेर्नुहोस्, वा WhatsApp मा सोध्नुहोस् — हामी विकल्प सुझाउँछौं।",
+  },
+  "faq.q10": { en: "Do you have a shop I can visit?", ne: "म आउन मिल्ने पसल छ?" },
+  "faq.a10": {
+    en: "No — we're an online-only florist, so there is no shop to walk into. You order on this website, and we hand your order to you at an agreed spot near the terminal. There is no delivery fee.",
+    ne: "छैन — हामी अनलाइन मात्र चल्ने फूल पसल हौं, त्यसैले भित्र पस्न मिल्ने पसल छैन। तपाईं यही वेबसाइटमा अर्डर गर्नुहुन्छ, र हामी टर्मिनल नजिकको तय गरिएको ठाउँमा हस्तान्तरण गर्छौं। डेलिभरी शुल्क छैन।",
   },
 };
 

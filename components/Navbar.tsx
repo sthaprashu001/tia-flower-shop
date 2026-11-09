@@ -27,7 +27,8 @@ export default function Navbar() {
             className="h-10 w-auto rounded-lg sm:h-12"
           />
           <div>
-            <h1 className="font-display text-sm italic text-rose-dark sm:text-lg">TIA</h1>
+            {/* Not an <h1>: each page has its own single main heading. */}
+            <p className="font-display text-sm italic text-rose-dark sm:text-lg">TIA</p>
             <p className="text-xs text-charcoal/60">Flower Shop</p>
           </div>
         </Link>

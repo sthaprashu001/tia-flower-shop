@@ -16,8 +16,9 @@ export default function Footer() {
         <div>
           <p className="font-display text-lg italic">TIA Flower Shop</p>
           <p className="mt-2 text-sm text-ivory/70">
-            Fresh bouquets, prepared near Tribhuvan International Airport,
-            Kathmandu. Order ahead, meet us near the terminal.
+            An online-only florist. Fresh bouquets, khata and flags prepared to
+            order and handed to you near Tribhuvan International Airport,
+            Kathmandu. No delivery fee.
           </p>
         </div>
 
@@ -28,9 +29,9 @@ export default function Footer() {
           <ul className="mt-3 space-y-2 text-sm">
             <li><Link href="/bouquets" className="hover:text-rose-light">Bouquets</Link></li>
             <li><Link href="/order" className="hover:text-rose-light">Place an order</Link></li>
+            <li><Link href="/order-status" className="hover:text-rose-light">Track your order</Link></li>
             <li><Link href="/faq" className="hover:text-rose-light">FAQ</Link></li>
             <li><Link href="/contact" className="hover:text-rose-light">Contact</Link></li>
-            <li><Link href="/admin/login" className="hover:text-rose-light">Admin</Link></li>
           </ul>
         </div>
 
@@ -54,7 +55,10 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-white/10 px-4 py-4 text-center font-mono text-xs text-ivory/40">
-        © {new Date().getFullYear()} TIA Flower Shop · Kathmandu, Nepal
+        © {new Date().getFullYear()} TIA Flower Shop · Kathmandu, Nepal ·{" "}
+        <Link href="/admin/login" className="text-ivory/30 hover:text-ivory/60">
+          Staff
+        </Link>
       </div>
     </footer>
   );

@@ -28,10 +28,11 @@ export default function ContactPage() {
         <div className="rounded-card border border-sand bg-white p-5">
           <h2 className="font-display text-lg text-charcoal">Near TIA</h2>
           <p className="mt-1 text-sm text-charcoal/70">
-            Bouquets are prepared about 2 minutes' walk from Tribhuvan
-            International Airport. We meet customers near the terminal —
-            never inside restricted airport areas. The exact spot is
-            confirmed on WhatsApp for every order.
+            We&apos;re an online-only florist, so there is no shop to walk into.
+            You order on this website, and we hand your order to you at an
+            agreed spot near the terminal of Tribhuvan International Airport —
+            never inside restricted airport areas. The exact spot is confirmed
+            on WhatsApp for every order. There is no delivery fee.
           </p>
         </div>
 

@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     template: "%s | TIA Flower Shop",
   },
   description:
-    "Best flower shop near Tribhuvan International Airport Kathmandu. Fresh bouquets for arrivals, departures & special occasions. Same-day delivery available.",
+    "Online flower shop for Tribhuvan International Airport, Kathmandu. Fresh bouquets, khata and flags prepared to order and handed to you near the terminal. No delivery fee.",
   keywords: [
     "flower shop near TIA",
     "flower shop Kathmandu",
@@ -51,9 +51,9 @@ export const metadata: Metadata = {
     "flower shop ktm airport",
     "bouquet shop near tia",
     "flowers Tribhuvan Airport",
-    "flower delivery airport Kathmandu",
+    "flowers for airport pickup Kathmandu",
     "fresh flowers Nepal",
-    "bouquet delivery Kathmandu",
+    "bouquet Kathmandu",
     "flowers near airport ktm",
     "khata flags Kathmandu",
     "gifts near TIA",
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "TIA Flower Shop | Fresh Bouquets Near the Airport",
     description:
-      "Welcome or say goodbye with fresh flowers, delivered near TIA, Kathmandu.",
+      "Welcome or say goodbye with fresh flowers, handed to you near TIA, Kathmandu.",
     url: siteUrl,
     siteName: "TIA Flower Shop",
     type: "website",
@@ -125,7 +125,7 @@ export default function RootLayout({
     "@id": siteUrl,
     name: "TIA Flower Shop",
     description:
-      "Fresh bouquet delivery near Tribhuvan International Airport, Kathmandu, Nepal. Specializing in bouquets, khata, and flags.",
+      "Online florist for Tribhuvan International Airport, Kathmandu, Nepal. Bouquets, khata and flags prepared to order and handed over near the terminal.",
     url: siteUrl,
     logo: `${siteUrl}/logo/tia-logo.jpeg`,
     image: `${siteUrl}/images/red-rose-black-cover.jpeg`,
@@ -143,7 +143,7 @@ export default function RootLayout({
       longitude: parseFloat(longitude),
     },
     areaServed: { "@type": "City", name: "Kathmandu" },
-    priceRange: "Rs. 70 - Rs. 1000",
+    priceRange: "Rs. 70 - Rs. 1,500",
     ...(sameAs.length > 0 ? { sameAs } : {}),
   };
 

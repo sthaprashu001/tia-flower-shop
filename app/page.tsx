@@ -1,33 +1,39 @@
 import Link from "next/link";
 import Image from "next/image";
 import BouquetCard from "@/components/BouquetCard";
-import AddToCartButton from "@/components/AddToCartButton";
+import LocalizedWhatsAppButton from "@/components/LocalizedWhatsAppButton";
 import ShopStatusBadge from "@/components/ShopStatusBadge";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import T from "@/components/T";
 import { getAllBouquets } from "@/lib/products";
+import { getShopSettings } from "@/lib/shopSettings";
 
 export const dynamic = "force-dynamic";
 
+// All visible text lives in lib/i18n.ts (keys "home.*") so the English /
+// Nepali switch works on the homepage too.
 const STEPS = [
-  { title: "Browse", body: "See today's available bouquets and prices." },
-  { title: "Choose a time", body: "Pick when you'll be near TIA." },
-  { title: "We prepare", body: "Your bouquet is made fresh, at home." },
-  {
-    title: "Meet & receive",
-    body: "We hand it to you near TIA. Free, no delivery cost.",
-  },
+  { title: "home.step1.title", body: "home.step1.body" },
+  { title: "home.step2.title", body: "home.step2.body" },
+  { title: "home.step3.title", body: "home.step3.body" },
+  { title: "home.step4.title", body: "home.step4.body" },
 ];
 
-export default async function HomePage() {
-  const bouquets = await getAllBouquets();
+const TRUST = [
+  { icon: "💬", title: "home.trust1.title", body: "home.trust1.body" },
+  { icon: "🤝", title: "home.trust2.title", body: "home.trust2.body" },
+  { icon: "🔎", title: "home.trust3.title", body: "home.trust3.body" },
+];
 
-  // Homepage photo stack, at the very top of the page (what the customer calls
-  // "the scattered cards below Ask on WhatsApp"). Admins control this from
-  // /admin/products: each bouquet has one "Homepage stack position" number
+const pad = (h: number) => `${String(h).padStart(2, "0")}:00`;
+
+export default async function HomePage() {
+  const [bouquets, settings] = await Promise.all([getAllBouquets(), getShopSettings()]);
+
+  // Homepage photo stack, at the very top of the page. Admins control this from
+  // /admin/products: each product has one "Homepage stack position" number
   // (1-10). Items with a position show first, lowest number first, up to 10,
-  // from any category — there's no fixed split between bouquets/khata/flags.
-  // If no admin has set a position yet, a sensible default mix is shown so
-  // the homepage is never empty on a fresh install.
+  // from any category. If no admin has set a position yet, a sensible default
+  // mix is shown so the homepage is never empty on a fresh install.
   const MAX_COLLAGE_ITEMS = 10;
   const positioned = bouquets
     .filter((b) => b.available && b.featured && (b.featuredOrder || 0) > 0)
@@ -36,19 +42,18 @@ export default async function HomePage() {
 
   let collage = positioned;
   if (collage.length === 0) {
-    // Default mix, only used until any admin sets a stack position: a few
-    // bouquets plus one khata and one flag, so all categories are represented.
     const defaultBouquets = bouquets.filter((b) => b.available && b.category === "Bouquets").slice(0, 4);
     const defaultKhata = bouquets.filter((b) => b.available && b.category === "Khata").slice(0, 2);
-    const defaultFlag = bouquets.filter((b) => b.available && b.category === "Flags").slice(0, 1);
+    // Accept both spellings so the default mix works with either category name.
+    const defaultFlag = bouquets
+      .filter((b) => b.available && (b.category === "Flags" || b.category === "Flag"))
+      .slice(0, 1);
     collage = [...defaultKhata, ...defaultBouquets, ...defaultFlag];
   }
 
-  // "Today's items": the admin ticks "Show in Today's items" per bouquet, in any
-  // category (see /admin/products). Picked items show first, in category order
-  // (Bouquets, then others). If the admin hasn't picked at least 8, the rest are
-  // filled in automatically (also category-first) so mobile always shows a full
-  // 4-row grid (2 columns × 4 rows) instead of a half-empty section.
+  // "Today's items": the admin ticks "Show in Today's items" per product. Picked
+  // items show first (Bouquets before other categories). If fewer than 8 are
+  // picked, the rest are filled in automatically so mobile shows a full grid.
   const MIN_TODAY_ITEMS = 8;
   const available = bouquets.filter((b) => b.available);
   const byCategoryFirst = (a: (typeof available)[number], b: (typeof available)[number]) => {
@@ -69,27 +74,29 @@ export default async function HomePage() {
           <div>
             <ShopStatusBadge />
             <h1 className="mt-5 max-w-md font-display text-4xl italic leading-tight text-charcoal sm:text-5xl">
-              Flowers for arrivals &amp; farewells.
+              <T k="home.hero.title" />
             </h1>
             <p className="mt-4 max-w-md text-charcoal/70">
-              Sending someone abroad or welcoming them home? We'll prepare fresh
-              flowers for your special moment and have them ready near TIA when
-              you need them.
-              <span className="block mt-2 text-rose-500 italic">
-                We prepare bouquets at home and deliver them near airport. We do
-                not have our physical shop yet!!
-              </span>
+              <T k="home.hero.body" />
+            </p>
+            <p className="mt-4 max-w-md rounded-card border border-sand bg-white/70 px-4 py-3 text-sm text-charcoal/80">
+              <T k="home.hero.note" />
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 href="/bouquets"
                 className="rounded-full bg-rose px-6 py-3 text-sm font-semibold text-ivory transition hover:bg-rose-dark"
               >
-                See today's bouquets
+                <T k="home.cta.browse" />
               </Link>
-              <WhatsAppButton label="Ask on WhatsApp" />
+              <LocalizedWhatsAppButton labelKey="home.cta.whatsapp" />
             </div>
+            <p className="mt-3 text-sm">
+              <Link href="/order-status" className="font-semibold text-rose-dark hover:underline">
+                <T k="home.cta.track" />
+              </Link>
+            </p>
           </div>
 
           {collage.length > 0 ? (
@@ -117,9 +124,9 @@ export default async function HomePage() {
                       sizes="176px"
                       priority={idx < 3}
                     />
-                    {/* Dark overlay on hover with category + name */}
-                    <div className="absolute inset-0 flex items-end bg-black/0 p-2 transition-colors group-hover:bg-black/40">
-                      <div className="opacity-0 transition-opacity group-hover:opacity-100">
+                    {/* Name is always visible on phones (no hover there); on larger screens it appears on hover. */}
+                    <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-transparent to-transparent p-2 transition-colors sm:bg-black/0 sm:bg-none sm:group-hover:bg-black/40">
+                      <div className="sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
                         <p className="text-[10px] font-medium uppercase text-white/70">
                           {item.category || "Bouquets"}
                         </p>
@@ -132,16 +139,47 @@ export default async function HomePage() {
             </div>
           ) : (
             <div className="mt-8 rounded-lg border border-sand/30 bg-sand/10 p-8 text-center">
-              <p className="text-sm text-charcoal/60">No bouquets to show yet — add one in the admin dashboard.</p>
+              <p className="text-sm text-charcoal/60">
+                <T k="home.empty" />
+              </p>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Trust strip */}
+      <section className="border-b border-sand bg-white">
+        <div className="mx-auto max-w-5xl px-4 py-8">
+          <ul className="grid gap-5 sm:grid-cols-3">
+            {TRUST.map((item) => (
+              <li key={item.title} className="flex gap-3">
+                <span className="text-2xl" aria-hidden>
+                  {item.icon}
+                </span>
+                <div>
+                  <h3 className="font-semibold text-charcoal">
+                    <T k={item.title} />
+                  </h3>
+                  <p className="mt-0.5 text-sm text-charcoal/70">
+                    <T k={item.body} />
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-6 text-xs text-charcoal/60">
+            <T k="home.hours" vars={{ open: pad(settings.openHour), close: pad(settings.closeHour) }} />{" "}
+            <Link href="/faq" className="font-semibold text-rose-dark hover:underline">
+              <T k="home.faqLink" />
+            </Link>
+          </p>
         </div>
       </section>
 
       {/* How it works */}
       <section className="mx-auto max-w-5xl px-4 py-16">
         <h2 className="font-display text-2xl italic text-charcoal">
-          How ordering works
+          <T k="home.how.title" />
         </h2>
 
         <div className="relative mt-10">
@@ -154,27 +192,26 @@ export default async function HomePage() {
                   {i + 1}
                 </span>
                 <h3 className="font-display text-lg text-charcoal">
-                  {s.title}
+                  <T k={s.title} />
                 </h3>
-                <p className="mt-1 text-sm text-charcoal/70">{s.body}</p>
+                <p className="mt-1 text-sm text-charcoal/70">
+                  <T k={s.body} />
+                </p>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      {/* Today's bouquets */}
+      {/* Today's items */}
       <section className="bg-cream">
         <div className="mx-auto max-w-5xl px-4 py-16">
           <div className="flex items-end justify-between">
             <h2 className="font-display text-2xl italic text-charcoal">
-              Today's items
+              <T k="home.today.title" />
             </h2>
-            <Link
-              href="/bouquets"
-              className="text-sm font-semibold text-rose-dark hover:underline"
-            >
-              View all →
+            <Link href="/bouquets" className="text-sm font-semibold text-rose-dark hover:underline">
+              <T k="home.today.all" />
             </Link>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -185,30 +222,26 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* TIA info */}
+      {/* Meeting near TIA */}
       <section className="mx-auto max-w-5xl px-4 py-16">
         <h2 className="font-display text-2xl italic text-charcoal">
-          Meeting you near TIA
+          <T k="home.meet.title" />
         </h2>
         <p className="mt-3 max-w-2xl text-charcoal/70">
-          We prepare every bouquet about two minutes' walk from Tribhuvan
-          International Airport, and hand it to you near the terminal — free of
-          charge. Tell us your preferred meeting point, date and time when you
-          order, and we'll confirm the exact spot on WhatsApp. Please allow at
-          least 30–60 minutes' notice so we can prepare it fresh.
+          <T k="home.meet.body" />
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/order"
             className="rounded-full bg-charcoal px-6 py-3 text-sm font-semibold text-ivory transition hover:bg-charcoal/80"
           >
-            Place an order
+            <T k="home.meet.order" />
           </Link>
           <Link
             href="/contact"
             className="rounded-full border border-charcoal/20 px-6 py-3 text-sm font-semibold text-charcoal transition hover:border-charcoal/40"
           >
-            Contact us
+            <T k="nav.contact" />
           </Link>
         </div>
       </section>
