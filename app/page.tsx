@@ -168,7 +168,11 @@ export default async function HomePage() {
             ))}
           </ul>
           <p className="mt-6 text-xs text-charcoal/60">
-            <T k="home.hours" vars={{ open: pad(settings.openHour), close: pad(settings.closeHour) }} />{" "}
+            {settings.openHour === 0 && settings.closeHour === 24 ? (
+              <T k="home.hours24" />
+            ) : (
+              <T k="home.hours" vars={{ open: pad(settings.openHour), close: pad(settings.closeHour) }} />
+            )}{" "}
             <Link href="/faq" className="font-semibold text-rose-dark hover:underline">
               <T k="home.faqLink" />
             </Link>

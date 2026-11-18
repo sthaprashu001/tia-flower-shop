@@ -64,6 +64,10 @@ export const dictionary: Record<string, Entry> = {
     en: "Pickups {open}–{close} (Kathmandu time). Need a change? Message us on WhatsApp.",
     ne: "पिकअप {open}–{close} (काठमाडौं समय)। केही बदल्नुपर्‍यो? WhatsApp मा सन्देश पठाउनुहोस्।",
   },
+  "home.hours24": {
+    en: "Pickups available 24 hours (Kathmandu time). Need a change? Message us on WhatsApp.",
+    ne: "24 घण्टा पिकअप उपलब्ध (काठमाडौं समय)। केही बदल्नुपर्‍यो? WhatsApp मा सन्देश पठाउनुहोस्।",
+  },
   "home.faqLink": { en: "Read the FAQ", ne: "सोधिने प्रश्न पढ्नुहोस्" },
   "home.how.title": { en: "How ordering works", ne: "अर्डर कसरी गर्ने" },
   "home.step1.title": { en: "Choose", ne: "छान्नुहोस्" },

@@ -11,17 +11,31 @@ export interface ShopSettingsValue {
 }
 
 const DEFAULT_CAPACITY_PER_HOUR = 8;
-const DEFAULT_OPEN_HOUR = 6;
-const DEFAULT_CLOSE_HOUR = 22;
+// Pickups are open 24 hours a day by default (00:00 – 24:00, Kathmandu time).
+const DEFAULT_OPEN_HOUR = 0;
+const DEFAULT_CLOSE_HOUR = 24;
+
+// The old built-in default was 06:00–22:00. Settings still saved with exactly
+// that pair were never customised, so they are upgraded to the 24-hour default.
+// To restrict hours again, save any other pair in the admin dashboard
+// (e.g. 7 → 21).
+const LEGACY_OPEN_HOUR = 6;
+const LEGACY_CLOSE_HOUR = 22;
 
 type SettingsDoc = { status: ShopStatus; capacityPerHour?: number; openHour?: number; closeHour?: number };
 
 function toValue(doc: SettingsDoc): ShopSettingsValue {
+  let openHour = doc.openHour ?? DEFAULT_OPEN_HOUR;
+  let closeHour = doc.closeHour ?? DEFAULT_CLOSE_HOUR;
+  if (openHour === LEGACY_OPEN_HOUR && closeHour === LEGACY_CLOSE_HOUR) {
+    openHour = DEFAULT_OPEN_HOUR;
+    closeHour = DEFAULT_CLOSE_HOUR;
+  }
   return {
     status: doc.status,
     capacityPerHour: doc.capacityPerHour ?? DEFAULT_CAPACITY_PER_HOUR,
-    openHour: doc.openHour ?? DEFAULT_OPEN_HOUR,
-    closeHour: doc.closeHour ?? DEFAULT_CLOSE_HOUR,
+    openHour,
+    closeHour,
   };
 }
 
