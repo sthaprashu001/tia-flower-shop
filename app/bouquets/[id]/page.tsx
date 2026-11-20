@@ -136,9 +136,7 @@ export default async function BouquetDetailPage({ params }: { params: { id: stri
             </p>
           )}
 
-          <p className="mt-6 border-t border-sand pt-4 text-sm text-charcoal/70">
-            <span className="font-medium text-charcoal"><T k="home.promise.title" />.</span> <T k="home.promise.body" />
-          </p>
+          
         </div>
       </div>
     </div>
