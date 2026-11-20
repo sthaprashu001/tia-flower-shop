@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { requireAdmin } from "@/lib/guards";
 import { bouquets } from "@/lib/data";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
-import { cleanKind, cleanTags } from "@/lib/products";
+import { cleanKind } from "@/lib/products";
 import { parseProductFields } from "@/lib/validation";
 import Product from "@/models/Product";
 
@@ -66,7 +66,6 @@ export async function GET() {
         leadTimeMinutes: Number(p.leadTimeMinutes) || 0,
         todayPick: p.todayPick === true,
         kind: cleanKind(p.kind),
-        tags: cleanTags(p.tags),
         sizeNote: typeof p.sizeNote === "string" ? p.sizeNote : "",
         catalogOrder: Number(p.catalogOrder) || 0,
         categoryOrder: Number(p.categoryOrder) || 0,
@@ -117,7 +116,6 @@ export async function POST(req: NextRequest) {
       featured: false,
       featuredOrder: 0,
       kind: "",
-      tags: [],
       sizeNote: "",
       catalogOrder: 0,
       categoryOrder: 0,

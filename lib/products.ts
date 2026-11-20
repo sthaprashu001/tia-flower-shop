@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { Bouquet, Occasion, OCCASIONS, ProductKind, PRODUCT_KINDS } from "./types";
+import { Bouquet, ProductKind, PRODUCT_KINDS } from "./types";
 import { allProducts as mockBouquets, getBouquetById as getMockBouquetById } from "./data";
 import { isDatabaseConfigured, connectToDatabase } from "./mongodb";
 import Product from "@/models/Product";
@@ -28,7 +28,6 @@ interface ProductDoc {
   leadTimeMinutes?: number;
   todayPick?: boolean;
   kind?: string;
-  tags?: string[];
   sizeNote?: string;
   catalogOrder?: number;
   categoryOrder?: number;
@@ -36,11 +35,6 @@ interface ProductDoc {
 
 export function cleanKind(kind: unknown): ProductKind | undefined {
   return typeof kind === "string" && (PRODUCT_KINDS as readonly string[]).includes(kind) ? (kind as ProductKind) : undefined;
-}
-
-export function cleanTags(tags: unknown): Occasion[] {
-  if (!Array.isArray(tags)) return [];
-  return tags.filter((t): t is Occasion => typeof t === "string" && (OCCASIONS as readonly string[]).includes(t));
 }
 
 function serialize(doc: ProductDoc): Bouquet {
@@ -60,7 +54,6 @@ function serialize(doc: ProductDoc): Bouquet {
     leadTimeMinutes: doc.leadTimeMinutes || 0,
     todayPick: doc.todayPick === true,
     kind: cleanKind(doc.kind),
-    tags: cleanTags(doc.tags),
     sizeNote: doc.sizeNote || "",
     catalogOrder: doc.catalogOrder || 0,
     categoryOrder: doc.categoryOrder || 0,

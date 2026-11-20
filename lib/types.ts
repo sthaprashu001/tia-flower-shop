@@ -10,29 +10,6 @@ export type ShopStatus = "OPEN" | "BUSY" | "CLOSED";
 export const PRODUCT_KINDS = ["fresh", "artificial", "other"] as const;
 export type ProductKind = (typeof PRODUCT_KINDS)[number];
 
-/** "Why are you giving flowers?" — customers shop by occasion. */
-export const OCCASIONS = ["welcome", "farewell", "birthday", "love", "blessing", "national"] as const;
-export type Occasion = (typeof OCCASIONS)[number];
-
-export const OCCASION_EMOJI: Record<Occasion, string> = {
-  welcome: "🛬",
-  farewell: "🛫",
-  birthday: "🎂",
-  love: "❤️",
-  blessing: "🙏",
-  national: "🇳🇵",
-};
-
-/** English labels, used in the admin panel (customers see translated labels). */
-export const OCCASION_LABEL_EN: Record<Occasion, string> = {
-  welcome: "Welcome home",
-  farewell: "Farewell",
-  birthday: "Birthday & anniversary",
-  love: "Love & Valentine's",
-  blessing: "Blessings & khata",
-  national: "National pride",
-};
-
 export interface Bouquet {
   id: string;
   name: string;
@@ -49,7 +26,6 @@ export interface Bouquet {
   leadTimeMinutes?: number; // customers must order this many minutes before pickup (0 = no minimum)
   todayPick?: boolean; // admin-curated: "Best sellers" row on the homepage
   kind?: ProductKind; // fresh / artificial / other (unset on older products)
-  tags?: Occasion[]; // occasions this product suits
   sizeNote?: string; // short size note, e.g. "7 roses" or "Regular · 12 stems"
   catalogOrder?: number; // admin-chosen position in "All products" (0 = not numbered)
   categoryOrder?: number; // admin-chosen position inside its own category section (0 = not numbered)

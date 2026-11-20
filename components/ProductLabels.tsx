@@ -1,6 +1,6 @@
 "use client";
 
-import { Occasion, OCCASION_EMOJI, ProductKind } from "@/lib/types";
+import { ProductKind } from "@/lib/types";
 import { useLang } from "./LanguageProvider";
 
 /**
@@ -15,17 +15,5 @@ export function KindBadge({ kind }: { kind?: ProductKind }) {
     <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${style}`}>
       {t(kind === "fresh" ? "kind.fresh" : "kind.artificial")}
     </span>
-  );
-}
-
-/** "Good for: 🛬 Welcome home · 🛫 Farewell" on the product page. */
-export function OccasionTags({ tags }: { tags?: Occasion[] }) {
-  const { t } = useLang();
-  if (!tags || tags.length === 0) return null;
-  return (
-    <p className="mt-3 text-sm text-charcoal/70">
-      <span className="font-medium text-charcoal">{t("occ.goodFor")}</span>{" "}
-      {tags.map((o) => `${OCCASION_EMOJI[o]} ${t(`occ.${o}`)}`).join("   ")}
-    </p>
   );
 }

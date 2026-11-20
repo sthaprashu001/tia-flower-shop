@@ -28,8 +28,6 @@ const ProductSchema = new Schema(
     leadTimeMinutes: { type: Number, default: 0, min: 0, max: 43200 },
     // "fresh" | "artificial" | "other" — "" means not set yet.
     kind: { type: String, enum: ["fresh", "artificial", "other", ""], default: "" },
-    // Occasions this product suits (see OCCASIONS in lib/types.ts).
-    tags: { type: [String], default: [] },
     // Short size note shown on the card, e.g. "7 roses".
     sizeNote: { type: String, default: "", maxlength: 60 },
   },

@@ -1,4 +1,4 @@
-import { MAX_CATALOG_POSITION, MAX_HOME_POSITION, OCCASIONS, PRODUCT_KINDS } from "./types";
+import { MAX_CATALOG_POSITION, MAX_HOME_POSITION, PRODUCT_KINDS } from "./types";
 
 /**
  * Shared input validation helpers. Every value that comes from a request
@@ -149,15 +149,6 @@ export function parseProductFields(
     } else {
       return { error: "Invalid product type." };
     }
-  }
-  if ("tags" in b) {
-    if (!Array.isArray(b.tags) || b.tags.length > OCCASIONS.length) return { error: "Invalid occasions." };
-    const tags: string[] = [];
-    for (const t of b.tags) {
-      if (typeof t !== "string" || !(OCCASIONS as readonly string[]).includes(t)) return { error: "Invalid occasion." };
-      if (!tags.includes(t)) tags.push(t);
-    }
-    data.tags = tags;
   }
   if ("sizeNote" in b) data.sizeNote = cleanText(b.sizeNote, 60);
   return { data };

@@ -3,7 +3,7 @@ import ProductBrowser from "@/components/ProductBrowser";
 import LocalizedWhatsAppButton from "@/components/LocalizedWhatsAppButton";
 import T from "@/components/T";
 import { getAllBouquets, getCategories } from "@/lib/products";
-import { OCCASIONS, PRODUCT_KINDS, sortByPosition } from "@/lib/types";
+import { sortByPosition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -20,14 +20,6 @@ export default async function BouquetsPage({
 }) {
   const params = await searchParams;
   const selectedCategory = params.category || "";
-  // ?kind=fresh|artificial|other and ?occasion=welcome… come from homepage links.
-  const kind = (PRODUCT_KINDS as readonly string[]).includes(params.kind) ? (params.kind as (typeof PRODUCT_KINDS)[number]) : "all";
-  const occasion = (OCCASIONS as readonly string[]).includes(params.occasion) ? (params.occasion as (typeof OCCASIONS)[number]) : "all";
-
-  // ?tab=natural|artificial|more only matters inside the Bouquets section.
-  const tab = ["natural", "artificial", "more"].includes(params.tab)
-    ? (params.tab as "natural" | "artificial" | "more")
-    : undefined;
 
   const bouquets = await getAllBouquets();
   const filtered = selectedCategory
@@ -41,7 +33,6 @@ export default async function BouquetsPage({
   const soldOut = ordered.filter((b) => !b.available);
 
   const categories = await getCategories();
-  const lowestPrice = available.length > 0 ? Math.min(...available.map((b) => b.price)) : null;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -51,11 +42,6 @@ export default async function BouquetsPage({
       <p className="mt-2 max-w-xl text-charcoal/70">
         <T k="cat.intro" />
       </p>
-      {lowestPrice !== null && (
-        <p className="mt-2 font-mono text-sm font-bold text-rose-dark">
-          <T k="cat.fromPrice" vars={{ price: lowestPrice.toLocaleString("en-IN") }} />
-        </p>
-      )}
 
       {/* Category filter tabs */}
       {categories.length > 1 && (
@@ -86,16 +72,8 @@ export default async function BouquetsPage({
         </div>
       )}
 
-      {/* key makes the filters reset when the category link changes */}
-      <ProductBrowser
-        key={`${selectedCategory}|${kind}|${occasion}|${tab || ""}`}
-        available={available}
-        soldOut={soldOut}
-        bouquetTabs={selectedCategory === "Bouquets"}
-        initialTab={tab}
-        initialKind={kind}
-        initialOccasion={occasion}
-      />
+      {/* key makes the search box reset when the category link changes */}
+      <ProductBrowser key={selectedCategory} available={available} soldOut={soldOut} />
 
       <div className="mt-10 flex flex-wrap items-center gap-3 rounded-card border border-sand bg-white p-4">
         <p className="flex-1 text-sm text-charcoal/70">

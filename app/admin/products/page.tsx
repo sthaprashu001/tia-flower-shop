@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LEAD_TIME_PRESETS, leadTimeLabel } from "@/lib/time";
-import { MAX_CATALOG_POSITION, MAX_HOME_POSITION, Occasion, OCCASIONS, OCCASION_EMOJI, OCCASION_LABEL_EN, ProductKind } from "@/lib/types";
+import { MAX_CATALOG_POSITION, MAX_HOME_POSITION, ProductKind } from "@/lib/types";
 import ImageManager from "@/components/admin/ImageManager";
 
 /**
@@ -38,7 +38,6 @@ interface AdminProduct {
   leadTimeMinutes?: number;
   todayPick?: boolean;
   kind?: ProductKind;
-  tags?: Occasion[];
   sizeNote?: string;
 }
 
@@ -77,7 +76,6 @@ const emptyForm = {
   leadTimeMinutes: "0", // minimum notice in minutes; "0" = none
   todayPick: false,
   kind: "" as ProductKind | "", // "" = not set
-  tags: [] as Occasion[],
   sizeNote: "",
 };
 
@@ -152,7 +150,6 @@ export default function AdminProductsPage() {
       leadTimeMinutes: String(p.leadTimeMinutes ?? 0),
       todayPick: p.todayPick ?? false,
       kind: p.kind ?? "",
-      tags: p.tags ?? [],
       sizeNote: p.sizeNote ?? "",
     });
     const best = minutesToBestUnit(p.leadTimeMinutes ?? 0);
@@ -169,10 +166,6 @@ export default function AdminProductsPage() {
     setCustomAmount("1");
     setCustomUnit("hours");
     setFormError(null);
-  }
-
-  function toggleTag(o: Occasion) {
-    setForm((f) => ({ ...f, tags: f.tags.includes(o) ? f.tags.filter((x) => x !== o) : [...f.tags, o] }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -206,7 +199,6 @@ export default function AdminProductsPage() {
       leadTimeMinutes: leadMinutes,
       todayPick: form.todayPick,
       kind: form.kind,
-      tags: form.tags,
       sizeNote: form.sizeNote.trim(),
     };
 
@@ -418,34 +410,6 @@ export default function AdminProductsPage() {
 
           <div className="sm:col-span-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
-              Good for (occasions)
-            </label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {OCCASIONS.map((o) => {
-                const on = form.tags.includes(o);
-                return (
-                  <button
-                    key={o}
-                    type="button"
-                    onClick={() => toggleTag(o)}
-                    aria-pressed={on}
-                    className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
-                      on ? "border-charcoal bg-charcoal text-ivory" : "border-sand bg-white text-charcoal hover:border-rose"
-                    }`}
-                  >
-                    {OCCASION_EMOJI[o]} {OCCASION_LABEL_EN[o]}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-1 text-xs text-charcoal/50">
-              Pick every occasion that fits. The homepage &quot;Shop by occasion&quot; tiles only appear for
-              occasions that have at least one product.
-            </p>
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
               Description
             </label>
             <textarea
@@ -617,8 +581,8 @@ export default function AdminProductsPage() {
             </div>
             <p className="mt-2 text-xs text-charcoal/50">
               <strong>All products</strong> is the page customers see with no section chosen (and the order of the homepage
-              rows). <strong>Section</strong> is the order inside Bouquets, Khata, Flags or any category you add. Inside
-              Bouquets the order is kept within the Natural and Artificial tabs. Numbered products come first, lowest
+              rows). <strong>Section</strong> is the order inside Bouquets, Khata, Flags or any category you add.
+              Numbered products come first, lowest
               number first; products with 0 follow, newest first. Leave gaps (10, 20, 30…) so you can slot new products
               in later without renumbering.
             </p>
@@ -821,11 +785,6 @@ export default function AdminProductsPage() {
                           {(p.catalogOrder || 0) > 0 ? `All #${p.catalogOrder}` : ""}
                           {(p.catalogOrder || 0) > 0 && (p.categoryOrder || 0) > 0 ? " · " : ""}
                           {(p.categoryOrder || 0) > 0 ? `Section #${p.categoryOrder}` : ""}
-                        </p>
-                      )}
-                      {p.tags && p.tags.length > 0 && (
-                        <p className="mt-1 text-xs text-charcoal/60">
-                          {p.tags.map((o) => `${OCCASION_EMOJI[o]} ${OCCASION_LABEL_EN[o]}`).join("  ")}
                         </p>
                       )}
                       <p className="mt-1 text-xs text-charcoal/50">

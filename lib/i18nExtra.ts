@@ -16,11 +16,8 @@ export const extraDictionary: Record<string, Entry> = {
   "cart.browse": { en: "Browse products", ne: "उत्पादन हेर्नुहोस्" },
 
   // ---- product type
-  "kind.title": { en: "Type", ne: "प्रकार" },
-  "kind.all": { en: "All types", ne: "सबै प्रकार" },
   "kind.fresh": { en: "Fresh flowers", ne: "ताजा फूल" },
   "kind.artificial": { en: "Artificial · long-lasting", ne: "कृत्रिम · लामो समय टिक्ने" },
-  "kind.other": { en: "Khata, flags & more", ne: "खादा, झन्डा र अरू" },
   "kind.artificialNote": {
     en: "Artificial flowers — they stay beautiful long after the flight.",
     ne: "कृत्रिम फूल — उडानपछि पनि धेरै समय राम्रो रहन्छ।",
@@ -30,29 +27,7 @@ export const extraDictionary: Record<string, Entry> = {
     ne: "असली फूल, तपाईंको पिकअप समयका लागि ताजा तयार गरिएको।",
   },
 
-  // ---- bouquet tabs (Bouquets section)
-  "tab.natural": { en: "Natural flowers", ne: "प्राकृतिक फूल" },
-  "tab.artificial": { en: "Artificial flowers", ne: "कृत्रिम फूल" },
-  "tab.more": { en: "More bouquets", ne: "अरू गुलदस्ता" },
-  "tab.label": { en: "Bouquet type", ne: "गुलदस्ताको प्रकार" },
-
-  // ---- occasions
-  "occ.title": { en: "Occasion", ne: "अवसर" },
-  "occ.all": { en: "Any occasion", ne: "जुनसुकै अवसर" },
-  "occ.welcome": { en: "Welcome home", ne: "स्वागत (आगमन)" },
-  "occ.farewell": { en: "Farewell", ne: "बिदाइ" },
-  "occ.birthday": { en: "Birthday & anniversary", ne: "जन्मदिन र वार्षिकोत्सव" },
-  "occ.love": { en: "Love & Valentine's", ne: "माया र प्रेम" },
-  "occ.blessing": { en: "Blessings & khata", ne: "आशीर्वाद र खादा" },
-  "occ.national": { en: "National pride", ne: "राष्ट्रिय गौरव" },
-  "occ.goodFor": { en: "Good for:", ne: "यसका लागि राम्रो:" },
-
   // ---- homepage
-  "home.occ.title": { en: "Shop by occasion", ne: "अवसर अनुसार छान्नुहोस्" },
-  "home.occ.sub": {
-    en: "Start with why you're giving flowers — we'll show what fits.",
-    ne: "फूल किन दिनुहुन्छ भनेर सुरु गर्नुहोस् — मिल्ने सामान हामी देखाउँछौं।",
-  },
   "home.row.best": { en: "Best sellers", ne: "धेरै बिक्ने" },
   "home.row.fresh": { en: "Fresh bouquets", ne: "ताजा गुलदस्ता" },
   "home.row.long": { en: "Long-lasting (artificial)", ne: "लामो समय टिक्ने (कृत्रिम)" },
@@ -77,7 +52,6 @@ export const extraDictionary: Record<string, Entry> = {
   "home.reviews.title": { en: "What customers say", ne: "ग्राहकहरू के भन्छन्" },
 
   // ---- products page
-  "cat.fromPrice": { en: "From Rs. {price}", ne: "रु. {price} देखि" },
   "cat.help": { en: "Not sure? Ask us on WhatsApp", ne: "पक्का छैन? WhatsApp मा सोध्नुहोस्" },
 
   // ---- cart upsell

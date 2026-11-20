@@ -7,7 +7,7 @@ import { siteUrl } from "@/lib/site";
 import AddToCartButton from "@/components/AddToCartButton";
 import LeadTimeNote from "@/components/LeadTimeNote";
 import ProductGallery from "@/components/ProductGallery";
-import { KindBadge, OccasionTags } from "@/components/ProductLabels";
+import { KindBadge } from "@/components/ProductLabels";
 import T from "@/components/T";
 
 // Bouquets can be added/edited any time from the admin panel, so this page
@@ -114,8 +114,6 @@ export default async function BouquetDetailPage({ params }: { params: { id: stri
               <T k="kind.freshNote" />
             </p>
           )}
-
-          <OccasionTags tags={bouquet.tags} />
 
           {(bouquet.leadTimeMinutes || 0) > 0 && (
             <p className="mt-3 rounded-card bg-amber-50 px-4 py-3 text-sm text-amber-900">

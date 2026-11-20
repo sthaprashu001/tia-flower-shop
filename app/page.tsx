@@ -7,7 +7,7 @@ import T from "@/components/T";
 import { PromiseAbout, Reviews } from "@/components/TrustSections";
 import { getAllBouquets } from "@/lib/products";
 import { getShopSettings } from "@/lib/shopSettings";
-import { Bouquet, MAX_HOME_POSITION, OCCASIONS, OCCASION_EMOJI, productKind, sortByPosition } from "@/lib/types";
+import { Bouquet, MAX_HOME_POSITION, productKind, sortByPosition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -74,14 +74,11 @@ export default async function HomePage() {
 
   const rows = [
     { key: "best", title: "home.row.best", href: "/bouquets", items: take(available.filter((b) => b.todayPick), 8) },
-    { key: "fresh", title: "home.row.fresh", href: "/bouquets?category=Bouquets&tab=natural", items: take(available.filter((b) => productKind(b) === "fresh"), 4) },
-    { key: "long", title: "home.row.long", href: "/bouquets?category=Bouquets&tab=artificial", items: take(available.filter((b) => productKind(b) === "artificial"), 4) },
-    { key: "more", title: "home.row.more", href: "/bouquets?category=Bouquets&tab=more", items: take(available.filter((b) => isBouquet(b) && !productKind(b)), 4) },
-    { key: "khata", title: "home.row.khata", href: "/bouquets?kind=other", items: take(available.filter((b) => !isBouquet(b)), 4) },
+    { key: "fresh", title: "home.row.fresh", href: "/bouquets?category=Bouquets", items: take(available.filter((b) => productKind(b) === "fresh"), 4) },
+    { key: "long", title: "home.row.long", href: "/bouquets?category=Bouquets", items: take(available.filter((b) => productKind(b) === "artificial"), 4) },
+    { key: "more", title: "home.row.more", href: "/bouquets?category=Bouquets", items: take(available.filter((b) => isBouquet(b) && !productKind(b)), 4) },
+    { key: "khata", title: "home.row.khata", href: "/bouquets", items: take(available.filter((b) => !isBouquet(b)), 4) },
   ].filter((r) => r.items.length > 0);
-
-  // Occasion tiles only for occasions that have at least one available product.
-  const occasions = OCCASIONS.filter((o) => available.some((b) => b.tags?.includes(o)));
 
   return (
     <div>
@@ -196,33 +193,6 @@ export default async function HomePage() {
           </p>
         </div>
       </section>
-
-      {/* Shop by occasion */}
-      {occasions.length > 0 && (
-        <section className="mx-auto max-w-5xl px-4 pt-16">
-          <h2 className="font-display text-2xl italic text-charcoal">
-            <T k="home.occ.title" />
-          </h2>
-          <p className="mt-1 max-w-xl text-sm text-charcoal/70">
-            <T k="home.occ.sub" />
-          </p>
-          <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {occasions.map((o) => (
-              <li key={o}>
-                <Link
-                  href={`/bouquets?occasion=${o}`}
-                  className="flex items-center gap-3 rounded-card border border-sand bg-white px-4 py-3.5 text-sm font-medium text-charcoal transition hover:border-rose"
-                >
-                  <span className="text-xl" aria-hidden>
-                    {OCCASION_EMOJI[o]}
-                  </span>
-                  <T k={`occ.${o}`} />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       {/* How it works */}
       <section className="mx-auto max-w-5xl px-4 py-16">
