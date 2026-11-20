@@ -35,12 +35,7 @@ export function PromiseAbout() {
           <p className="mt-3 text-charcoal/70">
             <T k="home.about.body" />
           </p>
-          <h3 className="mt-6 font-display text-lg text-charcoal">
-            <T k="home.promise.title" />
-          </h3>
-          <p className="mt-1 text-charcoal/70">
-            <T k="home.promise.body" />
-          </p>
+          
         </div>
         {HANDOVER_PHOTO && (
           <div className="relative aspect-[4/3] overflow-hidden rounded-card border border-sand bg-sand">
