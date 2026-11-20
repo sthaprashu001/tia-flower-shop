@@ -30,6 +30,12 @@ export const extraDictionary: Record<string, Entry> = {
     ne: "असली फूल, तपाईंको पिकअप समयका लागि ताजा तयार गरिएको।",
   },
 
+  // ---- bouquet tabs (Bouquets section)
+  "tab.natural": { en: "Natural flowers", ne: "प्राकृतिक फूल" },
+  "tab.artificial": { en: "Artificial flowers", ne: "कृत्रिम फूल" },
+  "tab.more": { en: "More bouquets", ne: "अरू गुलदस्ता" },
+  "tab.label": { en: "Bouquet type", ne: "गुलदस्ताको प्रकार" },
+
   // ---- occasions
   "occ.title": { en: "Occasion", ne: "अवसर" },
   "occ.all": { en: "Any occasion", ne: "जुनसुकै अवसर" },

@@ -1,4 +1,4 @@
-import { OCCASIONS, PRODUCT_KINDS } from "./types";
+import { MAX_CATALOG_POSITION, MAX_HOME_POSITION, OCCASIONS, PRODUCT_KINDS } from "./types";
 
 /**
  * Shared input validation helpers. Every value that comes from a request
@@ -126,9 +126,20 @@ export function parseProductFields(
     data.leadTimeMinutes = n;
   }
   if ("featuredOrder" in b) {
-    const n = num(b.featuredOrder, 0, 50);
-    if (n === null || !Number.isInteger(n)) return { error: "Featured order must be a whole number." };
+    const n = num(b.featuredOrder, 0, MAX_HOME_POSITION);
+    if (n === null || !Number.isInteger(n)) {
+      return { error: `Homepage position must be a whole number from 1 to ${MAX_HOME_POSITION} (0 = not shown).` };
+    }
     data.featuredOrder = n;
+  }
+  for (const key of ["catalogOrder", "categoryOrder"] as const) {
+    if (key in b) {
+      const n = num(b[key], 0, MAX_CATALOG_POSITION);
+      if (n === null || !Number.isInteger(n)) {
+        return { error: `Catalog position must be a whole number from 1 to ${MAX_CATALOG_POSITION} (0 = not numbered).` };
+      }
+      data[key] = n;
+    }
   }
   if ("kind" in b) {
     if (b.kind === "" || b.kind === null) {

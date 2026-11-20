@@ -30,6 +30,8 @@ interface ProductDoc {
   kind?: string;
   tags?: string[];
   sizeNote?: string;
+  catalogOrder?: number;
+  categoryOrder?: number;
 }
 
 export function cleanKind(kind: unknown): ProductKind | undefined {
@@ -60,6 +62,8 @@ function serialize(doc: ProductDoc): Bouquet {
     kind: cleanKind(doc.kind),
     tags: cleanTags(doc.tags),
     sizeNote: doc.sizeNote || "",
+    catalogOrder: doc.catalogOrder || 0,
+    categoryOrder: doc.categoryOrder || 0,
   };
 }
 

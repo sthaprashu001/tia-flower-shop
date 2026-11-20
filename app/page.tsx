@@ -7,7 +7,7 @@ import T from "@/components/T";
 import { PromiseAbout, Reviews } from "@/components/TrustSections";
 import { getAllBouquets } from "@/lib/products";
 import { getShopSettings } from "@/lib/shopSettings";
-import { Bouquet, OCCASIONS, OCCASION_EMOJI, productKind } from "@/lib/types";
+import { Bouquet, MAX_HOME_POSITION, OCCASIONS, OCCASION_EMOJI, productKind, sortByPosition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -33,10 +33,10 @@ export default async function HomePage() {
 
   // Homepage photo stack, at the very top of the page. Admins control this from
   // /admin/products: each product has one "Homepage stack position" number
-  // (1-10). Items with a position show first, lowest number first, up to 10,
+  // (1-12). Items with a position show first, lowest number first, up to 12,
   // from any category. If no admin has set a position yet, a sensible default
   // mix is shown so the homepage is never empty on a fresh install.
-  const MAX_COLLAGE_ITEMS = 10;
+  const MAX_COLLAGE_ITEMS = MAX_HOME_POSITION;
   const positioned = bouquets
     .filter((b) => b.available && b.featured && (b.featuredOrder || 0) > 0)
     .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0))
@@ -52,12 +52,18 @@ export default async function HomePage() {
       .slice(0, 1);
     collage = [...defaultKhata, ...defaultBouquets, ...defaultFlag];
   }
+  // With many photos in the pile, make them a little smaller so it stays tidy.
+  const cardSize =
+    collage.length > 8
+      ? "h-32 w-24 sm:h-40 sm:w-32 lg:h-48 lg:w-36"
+      : "h-40 w-32 sm:h-48 sm:w-40 lg:h-56 lg:w-44";
 
   // Product rows. Each product appears in only one row, in this order:
   // Best sellers (admin ticks "Best sellers") → Fresh → Long-lasting →
   // other bouquets not yet classified → khata, flags & everything else.
   // Empty rows are hidden.
-  const available = bouquets.filter((b) => b.available);
+  // Rows follow the admin's "All products" position numbers, then newest first.
+  const available = sortByPosition(bouquets.filter((b) => b.available), "catalogOrder");
   const used = new Set<string>();
   const take = (list: Bouquet[], n: number) => {
     const out = list.filter((b) => !used.has(b.id)).slice(0, n);
@@ -68,9 +74,9 @@ export default async function HomePage() {
 
   const rows = [
     { key: "best", title: "home.row.best", href: "/bouquets", items: take(available.filter((b) => b.todayPick), 8) },
-    { key: "fresh", title: "home.row.fresh", href: "/bouquets?kind=fresh", items: take(available.filter((b) => productKind(b) === "fresh"), 4) },
-    { key: "long", title: "home.row.long", href: "/bouquets?kind=artificial", items: take(available.filter((b) => productKind(b) === "artificial"), 4) },
-    { key: "more", title: "home.row.more", href: "/bouquets?category=Bouquets", items: take(available.filter((b) => isBouquet(b) && !productKind(b)), 4) },
+    { key: "fresh", title: "home.row.fresh", href: "/bouquets?category=Bouquets&tab=natural", items: take(available.filter((b) => productKind(b) === "fresh"), 4) },
+    { key: "long", title: "home.row.long", href: "/bouquets?category=Bouquets&tab=artificial", items: take(available.filter((b) => productKind(b) === "artificial"), 4) },
+    { key: "more", title: "home.row.more", href: "/bouquets?category=Bouquets&tab=more", items: take(available.filter((b) => isBouquet(b) && !productKind(b)), 4) },
     { key: "khata", title: "home.row.khata", href: "/bouquets?kind=other", items: take(available.filter((b) => !isBouquet(b)), 4) },
   ].filter((r) => r.items.length > 0);
 
@@ -125,7 +131,7 @@ export default async function HomePage() {
                   <Link
                     key={item.id}
                     href={`/bouquets/${item.id}`}
-                    className={`group relative -ml-6 h-40 w-32 shrink-0 overflow-hidden rounded-lg border-2 border-white shadow-md transition-transform hover:z-20 hover:scale-105 hover:shadow-xl first:ml-0 sm:h-48 sm:w-40 lg:h-56 lg:w-44 ${rotate} ${lift}`}
+                    className={`group relative -ml-6 ${cardSize} shrink-0 overflow-hidden rounded-lg border-2 border-white shadow-md transition-transform hover:z-20 hover:scale-105 hover:shadow-xl first:ml-0 ${rotate} ${lift}`}
                   >
                     <Image
                       src={item.image}

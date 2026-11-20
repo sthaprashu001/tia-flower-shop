@@ -51,6 +51,35 @@ export interface Bouquet {
   kind?: ProductKind; // fresh / artificial / other (unset on older products)
   tags?: Occasion[]; // occasions this product suits
   sizeNote?: string; // short size note, e.g. "7 roses" or "Regular · 12 stems"
+  catalogOrder?: number; // admin-chosen position in "All products" (0 = not numbered)
+  categoryOrder?: number; // admin-chosen position inside its own category section (0 = not numbered)
+}
+
+/** Homepage "tossed photos" slots: positions 1–12. */
+export const MAX_HOME_POSITION = 12;
+/** Catalog positions: 1–999 (0 or blank = not numbered, shown after the numbered ones). */
+export const MAX_CATALOG_POSITION = 999;
+
+/**
+ * Orders a list by the admin's position numbers: numbered products first
+ * (lowest number first), then everything without a number in the order it
+ * arrived (newest first). Ties keep the incoming order. Never mutates `list`.
+ */
+export function sortByPosition<T extends { catalogOrder?: number; categoryOrder?: number }>(
+  list: T[],
+  key: "catalogOrder" | "categoryOrder"
+): T[] {
+  return list
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const x = a.item[key] || 0;
+      const y = b.item[key] || 0;
+      if (x > 0 && y > 0) return x - y || a.index - b.index;
+      if (x > 0) return -1;
+      if (y > 0) return 1;
+      return a.index - b.index;
+    })
+    .map((e) => e.item);
 }
 
 /** All photos of a product for sliders; falls back to the single cover image. */

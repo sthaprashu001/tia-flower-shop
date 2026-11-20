@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LEAD_TIME_PRESETS, leadTimeLabel } from "@/lib/time";
-import { Occasion, OCCASIONS, OCCASION_EMOJI, OCCASION_LABEL_EN, ProductKind } from "@/lib/types";
+import { MAX_CATALOG_POSITION, MAX_HOME_POSITION, Occasion, OCCASIONS, OCCASION_EMOJI, OCCASION_LABEL_EN, ProductKind } from "@/lib/types";
 import ImageManager from "@/components/admin/ImageManager";
 
 /**
@@ -33,6 +33,8 @@ interface AdminProduct {
   category?: string;
   featured?: boolean;
   featuredOrder?: number;
+  catalogOrder?: number;
+  categoryOrder?: number;
   leadTimeMinutes?: number;
   todayPick?: boolean;
   kind?: ProductKind;
@@ -70,6 +72,8 @@ const emptyForm = {
   category: "Bouquets",
   featured: false,
   featuredOrder: 0,
+  catalogOrder: 0,
+  categoryOrder: 0,
   leadTimeMinutes: "0", // minimum notice in minutes; "0" = none
   todayPick: false,
   kind: "" as ProductKind | "", // "" = not set
@@ -143,6 +147,8 @@ export default function AdminProductsPage() {
       category: p.category || "Bouquets",
       featured: p.featured ?? false,
       featuredOrder: p.featuredOrder ?? 0,
+      catalogOrder: p.catalogOrder ?? 0,
+      categoryOrder: p.categoryOrder ?? 0,
       leadTimeMinutes: String(p.leadTimeMinutes ?? 0),
       todayPick: p.todayPick ?? false,
       kind: p.kind ?? "",
@@ -195,6 +201,8 @@ export default function AdminProductsPage() {
       category: form.category.trim() || "Bouquets",
       featured: form.featuredOrder > 0,
       featuredOrder: form.featuredOrder,
+      catalogOrder: form.catalogOrder,
+      categoryOrder: form.categoryOrder,
       leadTimeMinutes: leadMinutes,
       todayPick: form.todayPick,
       kind: form.kind,
@@ -280,6 +288,16 @@ export default function AdminProductsPage() {
   // A bouquet that still has no type chosen — these need a quick tidy-up.
   const isUnsorted = (p: AdminProduct) => (p.category || "Bouquets") === "Bouquets" && !p.kind;
   const unsortedCount = products.filter(isUnsorted).length;
+
+  // Warn (don't block) when another product already uses the same position number.
+  const formCategory = form.category.trim() || "Bouquets";
+  const others = products.filter((p) => p._id !== editingId);
+  const homeClash = form.featuredOrder > 0 ? others.find((p) => (p.featuredOrder || 0) === form.featuredOrder) : undefined;
+  const catalogClash = form.catalogOrder > 0 ? others.find((p) => (p.catalogOrder || 0) === form.catalogOrder) : undefined;
+  const categoryClash =
+    form.categoryOrder > 0
+      ? others.find((p) => (p.category || "Bouquets") === formCategory && (p.categoryOrder || 0) === form.categoryOrder)
+      : undefined;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -532,24 +550,77 @@ export default function AdminProductsPage() {
 
           <div className="sm:col-span-2 rounded-md border border-sand bg-sand/10 p-3">
             <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
-              Homepage photo stack — position (1–10)
+              Homepage photo pile — position (1–{MAX_HOME_POSITION})
             </label>
             <input
               type="number"
               min={0}
-              max={10}
+              max={MAX_HOME_POSITION}
               value={form.featuredOrder}
-              onChange={(e) => setForm((f) => ({ ...f, featuredOrder: parseInt(e.target.value) || 0 }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, featuredOrder: Math.min(MAX_HOME_POSITION, Math.max(0, parseInt(e.target.value) || 0)) }))
+              }
               className="mt-1 w-32 rounded-md border border-sand bg-white px-3 py-2"
-              placeholder="Blank = hidden"
+              placeholder="0 = hidden"
             />
+            {homeClash && (
+              <p className="mt-1 text-xs text-amber-800">
+                Position {form.featuredOrder} is already used by &quot;{homeClash.name}&quot;. Both will show, the
+                newer product first.
+              </p>
+            )}
             <p className="mt-1 text-xs text-charcoal/50">
-              This is the pile of tossed photos at the very top of the homepage (above &quot;How ordering
-              works&quot;), on both phone and desktop. Set a number 1–10 to include this item — lower numbers
-              are placed first. Leave it at 0 to leave this item out. Works for any category (bouquets, khata,
-              flags), so you decide the exact mix. If no product has a number set, we show a default mix
-              automatically. The cover (first) photo is the one shown there. Only use your best, most
-              consistent photos here.
+              The pile of tossed photos at the very top of the homepage. Give this product a number from 1 to{" "}
+              {MAX_HOME_POSITION} to include it — 1 is placed first. Leave it at 0 to keep it out. Works for any
+              category (bouquets, khata, flags), so you decide the exact mix. If no product has a number, a default
+              mix is shown. The cover (first) photo is the one used there.
+            </p>
+          </div>
+
+          <div className="sm:col-span-2 rounded-md border border-sand bg-sand/10 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+              Order in the product catalog (1–{MAX_CATALOG_POSITION}, 0 = not numbered)
+            </p>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs text-charcoal/70">Position in &quot;All products&quot;</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={MAX_CATALOG_POSITION}
+                  value={form.catalogOrder}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, catalogOrder: Math.min(MAX_CATALOG_POSITION, Math.max(0, parseInt(e.target.value) || 0)) }))
+                  }
+                  className="mt-1 w-32 rounded-md border border-sand bg-white px-3 py-2"
+                />
+                {catalogClash && (
+                  <p className="mt-1 text-xs text-amber-800">Also used by &quot;{catalogClash.name}&quot;.</p>
+                )}
+              </div>
+              <div>
+                <label className="text-xs text-charcoal/70">Position inside its section ({formCategory})</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={MAX_CATALOG_POSITION}
+                  value={form.categoryOrder}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, categoryOrder: Math.min(MAX_CATALOG_POSITION, Math.max(0, parseInt(e.target.value) || 0)) }))
+                  }
+                  className="mt-1 w-32 rounded-md border border-sand bg-white px-3 py-2"
+                />
+                {categoryClash && (
+                  <p className="mt-1 text-xs text-amber-800">Also used by &quot;{categoryClash.name}&quot; in this section.</p>
+                )}
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-charcoal/50">
+              <strong>All products</strong> is the page customers see with no section chosen (and the order of the homepage
+              rows). <strong>Section</strong> is the order inside Bouquets, Khata, Flags or any category you add. Inside
+              Bouquets the order is kept within the Natural and Artificial tabs. Numbered products come first, lowest
+              number first; products with 0 follow, newest first. Leave gaps (10, 20, 30…) so you can slot new products
+              in later without renumbering.
             </p>
           </div>
 
@@ -745,6 +816,13 @@ export default function AdminProductsPage() {
                           </span>
                         )}
                       </div>
+                      {((p.catalogOrder || 0) > 0 || (p.categoryOrder || 0) > 0) && (
+                        <p className="mt-1 font-mono text-[11px] text-charcoal/50">
+                          {(p.catalogOrder || 0) > 0 ? `All #${p.catalogOrder}` : ""}
+                          {(p.catalogOrder || 0) > 0 && (p.categoryOrder || 0) > 0 ? " · " : ""}
+                          {(p.categoryOrder || 0) > 0 ? `Section #${p.categoryOrder}` : ""}
+                        </p>
+                      )}
                       {p.tags && p.tags.length > 0 && (
                         <p className="mt-1 text-xs text-charcoal/60">
                           {p.tags.map((o) => `${OCCASION_EMOJI[o]} ${OCCASION_LABEL_EN[o]}`).join("  ")}

@@ -3,7 +3,7 @@ import ProductBrowser from "@/components/ProductBrowser";
 import LocalizedWhatsAppButton from "@/components/LocalizedWhatsAppButton";
 import T from "@/components/T";
 import { getAllBouquets, getCategories } from "@/lib/products";
-import { OCCASIONS, PRODUCT_KINDS } from "@/lib/types";
+import { OCCASIONS, PRODUCT_KINDS, sortByPosition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +24,21 @@ export default async function BouquetsPage({
   const kind = (PRODUCT_KINDS as readonly string[]).includes(params.kind) ? (params.kind as (typeof PRODUCT_KINDS)[number]) : "all";
   const occasion = (OCCASIONS as readonly string[]).includes(params.occasion) ? (params.occasion as (typeof OCCASIONS)[number]) : "all";
 
+  // ?tab=natural|artificial|more only matters inside the Bouquets section.
+  const tab = ["natural", "artificial", "more"].includes(params.tab)
+    ? (params.tab as "natural" | "artificial" | "more")
+    : undefined;
+
   const bouquets = await getAllBouquets();
   const filtered = selectedCategory
     ? bouquets.filter((b) => b.category === selectedCategory)
     : bouquets;
-  const available = filtered.filter((b) => b.available);
-  const soldOut = filtered.filter((b) => !b.available);
+  // The admin's position numbers decide the order: "All products" uses the catalog
+  // position, a category section (Bouquets, Khata, Flags…) uses the category position.
+  // Products without a number follow, newest first.
+  const ordered = sortByPosition(filtered, selectedCategory ? "categoryOrder" : "catalogOrder");
+  const available = ordered.filter((b) => b.available);
+  const soldOut = ordered.filter((b) => !b.available);
 
   const categories = await getCategories();
   const lowestPrice = available.length > 0 ? Math.min(...available.map((b) => b.price)) : null;
@@ -79,10 +88,11 @@ export default async function BouquetsPage({
 
       {/* key makes the filters reset when the category link changes */}
       <ProductBrowser
-        key={`${selectedCategory}|${kind}|${occasion}`}
+        key={`${selectedCategory}|${kind}|${occasion}|${tab || ""}`}
         available={available}
         soldOut={soldOut}
-        allowPopular={!selectedCategory}
+        bouquetTabs={selectedCategory === "Bouquets"}
+        initialTab={tab}
         initialKind={kind}
         initialOccasion={occasion}
       />

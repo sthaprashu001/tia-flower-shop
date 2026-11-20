@@ -18,8 +18,12 @@ const ProductSchema = new Schema(
     category: { type: String, default: "Bouquets" },
     featured: { type: Boolean, default: false },
     todayPick: { type: Boolean, default: false },
-    // Display order on homepage (1-10)
+    // Position in the homepage tossed-photos pile (1-12, 0 = not shown)
     featuredOrder: { type: Number, default: 0 },
+    // Position in the "All products" catalog view (1-999, 0 = not numbered)
+    catalogOrder: { type: Number, default: 0, min: 0, max: 999 },
+    // Position inside this product's own category section (Bouquets, Khata, Flags…)
+    categoryOrder: { type: Number, default: 0, min: 0, max: 999 },
     // Minimum notice in minutes before pickup. 0 = no minimum.
     leadTimeMinutes: { type: Number, default: 0, min: 0, max: 43200 },
     // "fresh" | "artificial" | "other" — "" means not set yet.

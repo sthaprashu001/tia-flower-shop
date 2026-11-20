@@ -68,6 +68,8 @@ export async function GET() {
         kind: cleanKind(p.kind),
         tags: cleanTags(p.tags),
         sizeNote: typeof p.sizeNote === "string" ? p.sizeNote : "",
+        catalogOrder: Number(p.catalogOrder) || 0,
+        categoryOrder: Number(p.categoryOrder) || 0,
       };
     });
     return NextResponse.json({ source: "database", products });
@@ -117,6 +119,8 @@ export async function POST(req: NextRequest) {
       kind: "",
       tags: [],
       sizeNote: "",
+      catalogOrder: 0,
+      categoryOrder: 0,
       ...parsed.data,
     });
     return NextResponse.json({ product }, { status: 201 });
