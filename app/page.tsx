@@ -4,13 +4,15 @@ import BouquetCard from "@/components/BouquetCard";
 import LocalizedWhatsAppButton from "@/components/LocalizedWhatsAppButton";
 import ShopStatusBadge from "@/components/ShopStatusBadge";
 import T from "@/components/T";
+import { PromiseAbout, Reviews } from "@/components/TrustSections";
 import { getAllBouquets } from "@/lib/products";
 import { getShopSettings } from "@/lib/shopSettings";
+import { Bouquet, OCCASIONS, OCCASION_EMOJI, productKind } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-// All visible text lives in lib/i18n.ts (keys "home.*") so the English /
-// Nepali switch works on the homepage too.
+// All visible text lives in lib/i18n.ts and lib/i18nExtra.ts (keys "home.*")
+// so the English / Nepali switch works on the homepage too.
 const STEPS = [
   { title: "home.step1.title", body: "home.step1.body" },
   { title: "home.step2.title", body: "home.step2.body" },
@@ -51,20 +53,29 @@ export default async function HomePage() {
     collage = [...defaultKhata, ...defaultBouquets, ...defaultFlag];
   }
 
-  // "Today's items": the admin ticks "Show in Today's items" per product. Picked
-  // items show first (Bouquets before other categories). If fewer than 8 are
-  // picked, the rest are filled in automatically so mobile shows a full grid.
-  const MIN_TODAY_ITEMS = 8;
+  // Product rows. Each product appears in only one row, in this order:
+  // Best sellers (admin ticks "Best sellers") → Fresh → Long-lasting →
+  // other bouquets not yet classified → khata, flags & everything else.
+  // Empty rows are hidden.
   const available = bouquets.filter((b) => b.available);
-  const byCategoryFirst = (a: (typeof available)[number], b: (typeof available)[number]) => {
-    if (a.category === "Bouquets" && b.category !== "Bouquets") return -1;
-    if (a.category !== "Bouquets" && b.category === "Bouquets") return 1;
-    return 0;
+  const used = new Set<string>();
+  const take = (list: Bouquet[], n: number) => {
+    const out = list.filter((b) => !used.has(b.id)).slice(0, n);
+    out.forEach((b) => used.add(b.id));
+    return out;
   };
+  const isBouquet = (b: Bouquet) => b.category === "Bouquets";
 
-  const picked = available.filter((b) => b.todayPick).sort(byCategoryFirst);
-  const rest = available.filter((b) => !b.todayPick).sort(byCategoryFirst);
-  const todayItems = [...picked, ...rest].slice(0, Math.max(MIN_TODAY_ITEMS, picked.length));
+  const rows = [
+    { key: "best", title: "home.row.best", href: "/bouquets", items: take(available.filter((b) => b.todayPick), 8) },
+    { key: "fresh", title: "home.row.fresh", href: "/bouquets?kind=fresh", items: take(available.filter((b) => productKind(b) === "fresh"), 4) },
+    { key: "long", title: "home.row.long", href: "/bouquets?kind=artificial", items: take(available.filter((b) => productKind(b) === "artificial"), 4) },
+    { key: "more", title: "home.row.more", href: "/bouquets?category=Bouquets", items: take(available.filter((b) => isBouquet(b) && !productKind(b)), 4) },
+    { key: "khata", title: "home.row.khata", href: "/bouquets?kind=other", items: take(available.filter((b) => !isBouquet(b)), 4) },
+  ].filter((r) => r.items.length > 0);
+
+  // Occasion tiles only for occasions that have at least one available product.
+  const occasions = OCCASIONS.filter((o) => available.some((b) => b.tags?.includes(o)));
 
   return (
     <div>
@@ -180,6 +191,33 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Shop by occasion */}
+      {occasions.length > 0 && (
+        <section className="mx-auto max-w-5xl px-4 pt-16">
+          <h2 className="font-display text-2xl italic text-charcoal">
+            <T k="home.occ.title" />
+          </h2>
+          <p className="mt-1 max-w-xl text-sm text-charcoal/70">
+            <T k="home.occ.sub" />
+          </p>
+          <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {occasions.map((o) => (
+              <li key={o}>
+                <Link
+                  href={`/bouquets?occasion=${o}`}
+                  className="flex items-center gap-3 rounded-card border border-sand bg-white px-4 py-3.5 text-sm font-medium text-charcoal transition hover:border-rose"
+                >
+                  <span className="text-xl" aria-hidden>
+                    {OCCASION_EMOJI[o]}
+                  </span>
+                  <T k={`occ.${o}`} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* How it works */}
       <section className="mx-auto max-w-5xl px-4 py-16">
         <h2 className="font-display text-2xl italic text-charcoal">
@@ -207,24 +245,67 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Today's items */}
+      {/* Products, grouped */}
       <section className="bg-cream">
         <div className="mx-auto max-w-5xl px-4 py-16">
-          <div className="flex items-end justify-between">
-            <h2 className="font-display text-2xl italic text-charcoal">
-              <T k="home.today.title" />
-            </h2>
-            <Link href="/bouquets" className="text-sm font-semibold text-rose-dark hover:underline">
-              <T k="home.today.all" />
-            </Link>
-          </div>
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {todayItems.map((b) => (
-              <BouquetCard key={b.id} bouquet={b} />
-            ))}
-          </div>
+          {rows.length === 0 ? (
+            <p className="text-center text-sm text-charcoal/60">
+              <T k="home.empty" />
+            </p>
+          ) : (
+            <div className="space-y-14">
+              {rows.map((row) => (
+                <div key={row.key}>
+                  <div className="flex items-end justify-between gap-4">
+                    <h2 className="font-display text-2xl italic text-charcoal">
+                      <T k={row.title} />
+                    </h2>
+                    <Link href={row.href} className="whitespace-nowrap text-sm font-semibold text-rose-dark hover:underline">
+                      <T k="home.today.all" />
+                    </Link>
+                  </div>
+                  {row.key === "long" && (
+                    <p className="mt-1 text-sm text-charcoal/70">
+                      <T k="kind.artificialNote" />
+                    </p>
+                  )}
+                  {row.key === "fresh" && (
+                    <p className="mt-1 text-sm text-charcoal/70">
+                      <T k="kind.freshNote" />
+                    </p>
+                  )}
+                  <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                    {row.items.map((b) => (
+                      <BouquetCard key={b.id} bouquet={b} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
+
+      {/* Help choosing */}
+      <section className="mx-auto max-w-5xl px-4 py-16">
+        <div className="flex flex-col gap-4 rounded-card border border-sand bg-white p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-display text-xl italic text-charcoal">
+              <T k="home.help.title" />
+            </h2>
+            <p className="mt-1 max-w-md text-sm text-charcoal/70">
+              <T k="home.help.body" />
+            </p>
+          </div>
+          <LocalizedWhatsAppButton
+            labelKey="home.help.cta"
+            message="Hi! I need help choosing flowers. Occasion: ___ · Pickup time: ___ · Budget: Rs. ___"
+          />
+        </div>
+      </section>
+
+      <Reviews />
+      <PromiseAbout />
 
       {/* Meeting near TIA */}
       <section className="mx-auto max-w-5xl px-4 py-16">

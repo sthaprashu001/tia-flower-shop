@@ -1,3 +1,5 @@
+import { OCCASIONS, PRODUCT_KINDS } from "./types";
+
 /**
  * Shared input validation helpers. Every value that comes from a request
  * body / query string is `unknown` until it passes through one of these.
@@ -128,5 +130,24 @@ export function parseProductFields(
     if (n === null || !Number.isInteger(n)) return { error: "Featured order must be a whole number." };
     data.featuredOrder = n;
   }
+  if ("kind" in b) {
+    if (b.kind === "" || b.kind === null) {
+      data.kind = "";
+    } else if (typeof b.kind === "string" && (PRODUCT_KINDS as readonly string[]).includes(b.kind)) {
+      data.kind = b.kind;
+    } else {
+      return { error: "Invalid product type." };
+    }
+  }
+  if ("tags" in b) {
+    if (!Array.isArray(b.tags) || b.tags.length > OCCASIONS.length) return { error: "Invalid occasions." };
+    const tags: string[] = [];
+    for (const t of b.tags) {
+      if (typeof t !== "string" || !(OCCASIONS as readonly string[]).includes(t)) return { error: "Invalid occasion." };
+      if (!tags.includes(t)) tags.push(t);
+    }
+    data.tags = tags;
+  }
+  if ("sizeNote" in b) data.sizeNote = cleanText(b.sizeNote, 60);
   return { data };
 }

@@ -16,7 +16,7 @@ export default function Footer() {
         <div>
           <p className="font-display text-lg italic">TIA Flower Shop</p>
           <p className="mt-2 text-sm text-ivory/70">
-            An online-only florist. Fresh bouquets, khata and flags prepared to
+            An online-only florist. Bouquets, khata and flags prepared to
             order and handed to you near Tribhuvan International Airport,
             Kathmandu. No delivery fee.
           </p>
@@ -27,7 +27,7 @@ export default function Footer() {
             Site
           </p>
           <ul className="mt-3 space-y-2 text-sm">
-            <li><Link href="/bouquets" className="hover:text-rose-light">Bouquets</Link></li>
+            <li><Link href="/bouquets" className="hover:text-rose-light">Products</Link></li>
             <li><Link href="/order" className="hover:text-rose-light">Place an order</Link></li>
             <li><Link href="/order-status" className="hover:text-rose-light">Track your order</Link></li>
             <li><Link href="/faq" className="hover:text-rose-light">FAQ</Link></li>

@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Lang, translate } from "@/lib/i18n";
+import { Lang } from "@/lib/i18n";
+import { translate } from "@/lib/i18nExtra";
 
 interface LanguageContextValue {
   lang: Lang;
@@ -16,6 +17,9 @@ const STORAGE_KEY = "tia-lang";
  * English / Nepali switch. The choice is remembered on the visitor's device
  * (a harmless preference — no personal data). Pages render in English first
  * and switch as soon as the saved choice is read.
+ *
+ * translate() comes from lib/i18nExtra.ts, which adds the newer keys on top
+ * of lib/i18n.ts.
  */
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>("en");

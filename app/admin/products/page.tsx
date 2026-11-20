@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LEAD_TIME_PRESETS, leadTimeLabel } from "@/lib/time";
+import { Occasion, OCCASIONS, OCCASION_EMOJI, OCCASION_LABEL_EN, ProductKind } from "@/lib/types";
 import ImageManager from "@/components/admin/ImageManager";
 
 /**
@@ -34,7 +35,16 @@ interface AdminProduct {
   featuredOrder?: number;
   leadTimeMinutes?: number;
   todayPick?: boolean;
+  kind?: ProductKind;
+  tags?: Occasion[];
+  sizeNote?: string;
 }
+
+const KIND_LABEL: Record<ProductKind, string> = {
+  fresh: "Fresh flowers",
+  artificial: "Artificial · long-lasting",
+  other: "Khata, flag or other",
+};
 
 const PRESET_MINUTES = LEAD_TIME_PRESETS.map((p) => p.minutes);
 const LEAD_TIME_MAX_MINUTES = 43200; // 30 days
@@ -62,6 +72,9 @@ const emptyForm = {
   featuredOrder: 0,
   leadTimeMinutes: "0", // minimum notice in minutes; "0" = none
   todayPick: false,
+  kind: "" as ProductKind | "", // "" = not set
+  tags: [] as Occasion[],
+  sizeNote: "",
 };
 
 export default function AdminProductsPage() {
@@ -86,6 +99,7 @@ export default function AdminProductsPage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
+  const [filterUnsorted, setFilterUnsorted] = useState(false);
 
   useEffect(() => {
     // Middleware already blocks unauthenticated requests to this route,
@@ -131,6 +145,9 @@ export default function AdminProductsPage() {
       featuredOrder: p.featuredOrder ?? 0,
       leadTimeMinutes: String(p.leadTimeMinutes ?? 0),
       todayPick: p.todayPick ?? false,
+      kind: p.kind ?? "",
+      tags: p.tags ?? [],
+      sizeNote: p.sizeNote ?? "",
     });
     const best = minutesToBestUnit(p.leadTimeMinutes ?? 0);
     setCustomAmount(String(best.amount));
@@ -146,6 +163,10 @@ export default function AdminProductsPage() {
     setCustomAmount("1");
     setCustomUnit("hours");
     setFormError(null);
+  }
+
+  function toggleTag(o: Occasion) {
+    setForm((f) => ({ ...f, tags: f.tags.includes(o) ? f.tags.filter((x) => x !== o) : [...f.tags, o] }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -176,6 +197,9 @@ export default function AdminProductsPage() {
       featuredOrder: form.featuredOrder,
       leadTimeMinutes: leadMinutes,
       todayPick: form.todayPick,
+      kind: form.kind,
+      tags: form.tags,
+      sizeNote: form.sizeNote.trim(),
     };
 
     try {
@@ -218,8 +242,8 @@ export default function AdminProductsPage() {
     }
   }
 
-  // One-tap "Today's pick" switch — shown in the homepage "Today's items"
-  // section for any category (see app/page.tsx), takes effect immediately.
+  // One-tap "Best sellers" switch — shown in the first product row on the
+  // homepage, takes effect immediately.
   async function handleToggleTodayPick(p: AdminProduct) {
     const next = !p.todayPick;
     setToggling((t) => ({ ...t, [`pick-${p._id}`]: true }));
@@ -233,7 +257,7 @@ export default function AdminProductsPage() {
       if (!res.ok) throw new Error();
     } catch {
       setProducts((prev) => prev.map((x) => (x._id === p._id ? { ...x, todayPick: !next } : x)));
-      alert("Could not change Today's pick — try again.");
+      alert("Could not change Best sellers — try again.");
     } finally {
       setToggling((t) => ({ ...t, [`pick-${p._id}`]: false }));
     }
@@ -253,6 +277,9 @@ export default function AdminProductsPage() {
   }
 
   const dbNotConnected = source === "mock";
+  // A bouquet that still has no type chosen — these need a quick tidy-up.
+  const isUnsorted = (p: AdminProduct) => (p.category || "Bouquets") === "Bouquets" && !p.kind;
+  const unsortedCount = products.filter(isUnsorted).length;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -297,8 +324,11 @@ export default function AdminProductsPage() {
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               className="mt-1 w-full rounded-md border border-sand px-3 py-2"
-              placeholder="e.g. Sunflower Bunch"
+              placeholder="e.g. Red Roses · Black Wrap · Regular"
             />
+            <p className="mt-1 text-xs text-charcoal/50">
+              Use the same pattern every time: Flower · Wrapping · Size. Check spelling before saving.
+            </p>
           </div>
 
           <div>
@@ -334,6 +364,68 @@ export default function AdminProductsPage() {
             </datalist>
           </div>
 
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+              Fresh or artificial?
+            </label>
+            <select
+              value={form.kind}
+              onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as ProductKind | "" }))}
+              className="mt-1 w-full rounded-md border border-sand bg-white px-3 py-2"
+            >
+              <option value="">Not set yet</option>
+              <option value="fresh">{KIND_LABEL.fresh}</option>
+              <option value="artificial">{KIND_LABEL.artificial}</option>
+              <option value="other">{KIND_LABEL.other}</option>
+            </select>
+            <p className="mt-1 text-xs text-charcoal/50">
+              Customers see a badge, and the product is grouped under Fresh or Long-lasting on the homepage.
+              Set this for every bouquet so nobody mistakes artificial flowers for fresh ones.
+            </p>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+              Size note (optional)
+            </label>
+            <input
+              type="text"
+              maxLength={60}
+              value={form.sizeNote}
+              onChange={(e) => setForm((f) => ({ ...f, sizeNote: e.target.value }))}
+              className="mt-1 w-full rounded-md border border-sand px-3 py-2"
+              placeholder="e.g. 7 roses · about 30 cm"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
+              Good for (occasions)
+            </label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {OCCASIONS.map((o) => {
+                const on = form.tags.includes(o);
+                return (
+                  <button
+                    key={o}
+                    type="button"
+                    onClick={() => toggleTag(o)}
+                    aria-pressed={on}
+                    className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
+                      on ? "border-charcoal bg-charcoal text-ivory" : "border-sand bg-white text-charcoal hover:border-rose"
+                    }`}
+                  >
+                    {OCCASION_EMOJI[o]} {OCCASION_LABEL_EN[o]}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-xs text-charcoal/50">
+              Pick every occasion that fits. The homepage &quot;Shop by occasion&quot; tiles only appear for
+              occasions that have at least one product.
+            </p>
+          </div>
+
           <div className="sm:col-span-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-charcoal/60">
               Description
@@ -355,6 +447,10 @@ export default function AdminProductsPage() {
               onChange={(images) => setForm((f) => ({ ...f, images }))}
               onBusyChange={setUploading}
             />
+            <p className="mt-1 text-xs text-charcoal/50">
+              Cover photo: whole bouquet, centred, square-friendly, plain background. Then a close-up,
+              someone holding it, and a real handover photo if you have one.
+            </p>
           </div>
 
           <div className="sm:col-span-2">
@@ -452,7 +548,8 @@ export default function AdminProductsPage() {
               works&quot;), on both phone and desktop. Set a number 1–10 to include this item — lower numbers
               are placed first. Leave it at 0 to leave this item out. Works for any category (bouquets, khata,
               flags), so you decide the exact mix. If no product has a number set, we show a default mix
-              automatically. The cover (first) photo is the one shown there.
+              automatically. The cover (first) photo is the one shown there. Only use your best, most
+              consistent photos here.
             </p>
           </div>
 
@@ -463,7 +560,7 @@ export default function AdminProductsPage() {
                 checked={form.todayPick}
                 onChange={(e) => setForm((f) => ({ ...f, todayPick: e.target.checked }))}
               />
-              Show in &quot;Today&apos;s items&quot; grid
+              Show in &quot;Best sellers&quot; row
             </label>
             <label className="flex items-center gap-2 text-sm text-charcoal">
               <input
@@ -482,10 +579,10 @@ export default function AdminProductsPage() {
               Customizable
             </label>
           </div>
-          <p className="mt-1 text-xs text-charcoal/50">
-            &quot;Today&apos;s items&quot; is a different section — the grid of bouquets further down the
-            homepage. If you don&apos;t pick at least 8 items across all categories, we automatically fill the
-            rest so the grid is never half-empty on mobile.
+          <p className="mt-1 text-xs text-charcoal/50 sm:col-span-2">
+            The homepage lists products in rows: Best sellers (ticked above), then Fresh bouquets, Long-lasting
+            (artificial), any bouquets with no type yet, and Khata, flags &amp; more. Each product appears in one
+            row only, and empty rows are hidden.
           </p>
         </div>
 
@@ -524,6 +621,20 @@ export default function AdminProductsPage() {
 
         {loading && <p className="mt-4 text-sm text-charcoal/60">Loading…</p>}
         {error && <p className="mt-4 text-sm text-rose-dark">{error}</p>}
+
+        {!loading && !error && unsortedCount > 0 && !dbNotConnected && (
+          <button
+            type="button"
+            onClick={() => setFilterUnsorted((v) => !v)}
+            className={`mt-4 w-full rounded-card border px-4 py-3 text-left text-sm transition ${
+              filterUnsorted ? "border-amber-400 bg-amber-100 text-amber-900" : "border-amber-200 bg-amber-50 text-amber-900 hover:border-amber-400"
+            }`}
+          >
+            <strong>{unsortedCount}</strong> bouquet{unsortedCount !== 1 ? "s have" : " has"} no &quot;fresh or
+            artificial&quot; type yet.{" "}
+            <span className="underline">{filterUnsorted ? "Show all products" : "Show only these"}</span>
+          </button>
+        )}
 
         {!loading && !error && products.length > 0 && (
           <>
@@ -570,7 +681,8 @@ export default function AdminProductsPage() {
               p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
               (p.description?.toLowerCase() || "").includes(searchQuery.toLowerCase());
             const matchesCategory = filterCategory === "" || p.category === filterCategory;
-            return matchesSearch && matchesCategory;
+            const matchesUnsorted = !filterUnsorted || isUnsorted(p);
+            return matchesSearch && matchesCategory && matchesUnsorted;
           });
 
           if (filtered.length === 0 && !loading && products.length > 0) {
@@ -608,16 +720,36 @@ export default function AdminProductsPage() {
                     <div className="flex-1">
                       <p className="font-semibold text-charcoal">{p.name}</p>
                       <p className="text-sm text-charcoal/60">Rs. {p.price.toLocaleString("en-IN")}</p>
-                      <div className="mt-1 flex gap-2 items-center">
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
                         <span className="inline-block rounded-full bg-sage-light px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-sage-dark">
                           {p.category || "Bouquets"}
                         </span>
+                        {p.kind === "fresh" && (
+                          <span className="inline-block rounded-full bg-sage-light px-2 py-0.5 text-[10px] font-semibold text-sage-dark">
+                            Fresh
+                          </span>
+                        )}
+                        {p.kind === "artificial" && (
+                          <span className="inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                            Artificial
+                          </span>
+                        )}
+                        {isUnsorted(p) && (
+                          <span className="inline-block rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 ring-1 ring-amber-300">
+                            Type not set
+                          </span>
+                        )}
                         {p.featured && (
                           <span className="inline-block rounded-full bg-rose/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-rose-dark">
                             Homepage stack {p.featuredOrder && `(#${p.featuredOrder})`}
                           </span>
                         )}
                       </div>
+                      {p.tags && p.tags.length > 0 && (
+                        <p className="mt-1 text-xs text-charcoal/60">
+                          {p.tags.map((o) => `${OCCASION_EMOJI[o]} ${OCCASION_LABEL_EN[o]}`).join("  ")}
+                        </p>
+                      )}
                       <p className="mt-1 text-xs text-charcoal/50">
                         {p.customizable ? "Customizable" : ""}
                         {p.customizable && (p.leadTimeMinutes || 0) > 0 ? " · " : ""}
@@ -654,7 +786,7 @@ export default function AdminProductsPage() {
                           type="button"
                           role="switch"
                           aria-checked={p.todayPick ?? false}
-                          aria-label={`${p.name} today's pick`}
+                          aria-label={`${p.name} best seller`}
                           disabled={toggling[`pick-${p._id}`]}
                           onClick={() => handleToggleTodayPick(p)}
                           className="mt-2 flex items-center gap-2 disabled:opacity-60"
@@ -671,7 +803,7 @@ export default function AdminProductsPage() {
                             />
                           </span>
                           <span className={`text-xs font-semibold ${p.todayPick ? "text-rose-dark" : "text-charcoal/50"}`}>
-                            {p.todayPick ? "Today's pick" : "Not in today's items"}
+                            {p.todayPick ? "Best seller" : "Not in best sellers"}
                           </span>
                         </button>
                       )}

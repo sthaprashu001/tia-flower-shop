@@ -11,7 +11,7 @@ import { Bouquet } from "@/lib/types";
 export default function CartPage() {
   const router = useRouter();
   const { t, lang } = useLang();
-  const { items, hydrated, removeItem, setQuantity } = useCart();
+  const { items, hydrated, addItem, removeItem, setQuantity } = useCart();
   const [bouquets, setBouquets] = useState<Bouquet[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,6 +31,11 @@ export default function CartPage() {
 
   const total = lines.reduce((sum, l) => sum + l.bouquet.price * l.quantity, 0);
   const isEmpty = hydrated && !loading && lines.length === 0;
+
+  // Gentle add-on: offer up to 3 khata when the cart has something but no khata yet.
+  const hasKhata = lines.some((l) => l.bouquet.category === "Khata");
+  const khataOptions =
+    lines.length > 0 && !hasKhata ? bouquets.filter((b) => b.category === "Khata" && b.available).slice(0, 3) : [];
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -97,6 +102,32 @@ export default function CartPage() {
           <Link href="/bouquets" className="mt-4 inline-block text-sm text-rose-dark hover:underline">
             {t("order.addMore")}
           </Link>
+
+          {khataOptions.length > 0 && (
+            <div className="mt-6 rounded-card border border-sand bg-cream p-4">
+              <h2 className="font-display text-lg text-charcoal">{t("cart.khata.title")}</h2>
+              <p className="mt-1 text-sm text-charcoal/70">{t("cart.khata.body")}</p>
+              <ul className="mt-3 space-y-2">
+                {khataOptions.map((k) => (
+                  <li key={k.id} className="flex items-center gap-3 rounded-md bg-white p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={k.image} alt={k.name} className="h-12 w-12 flex-shrink-0 rounded object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-charcoal">{k.name}</p>
+                      <p className="font-mono text-xs text-charcoal/60">Rs. {k.price.toLocaleString("en-IN")}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => addItem(k.id, 1)}
+                      className="rounded-full border border-rose px-4 py-1.5 text-xs font-semibold text-rose-dark hover:bg-rose hover:text-ivory"
+                    >
+                      {t("cart.khata.add")}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="mt-6 rounded-card border border-sand bg-white p-4">
             <div className="flex items-center justify-between">

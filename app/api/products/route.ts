@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { requireAdmin } from "@/lib/guards";
 import { bouquets } from "@/lib/data";
 import { isDatabaseConfigured, connectToDatabase } from "@/lib/mongodb";
+import { cleanKind, cleanTags } from "@/lib/products";
 import { parseProductFields } from "@/lib/validation";
 import Product from "@/models/Product";
 
@@ -64,6 +65,9 @@ export async function GET() {
         featuredOrder: Number(p.featuredOrder) || 0,
         leadTimeMinutes: Number(p.leadTimeMinutes) || 0,
         todayPick: p.todayPick === true,
+        kind: cleanKind(p.kind),
+        tags: cleanTags(p.tags),
+        sizeNote: typeof p.sizeNote === "string" ? p.sizeNote : "",
       };
     });
     return NextResponse.json({ source: "database", products });
@@ -110,6 +114,9 @@ export async function POST(req: NextRequest) {
       category: "Bouquets",
       featured: false,
       featuredOrder: 0,
+      kind: "",
+      tags: [],
+      sizeNote: "",
       ...parsed.data,
     });
     return NextResponse.json({ product }, { status: 201 });

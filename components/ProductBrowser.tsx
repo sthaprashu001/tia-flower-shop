@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Bouquet } from "@/lib/types";
+import { Bouquet, Occasion, OCCASIONS, OCCASION_EMOJI, ProductKind, productKind } from "@/lib/types";
 import BouquetCard from "./BouquetCard";
 import { useLang } from "./LanguageProvider";
 
 type PriceBand = "any" | "u500" | "500-1000" | "o1000";
 type SortKey = "default" | "low" | "high";
+type KindFilter = "all" | ProductKind;
+type OccasionFilter = "all" | Occasion;
 
 const inBand = (price: number, band: PriceBand) =>
   band === "any" ||
@@ -14,26 +16,40 @@ const inBand = (price: number, band: PriceBand) =>
   (band === "500-1000" && price >= 500 && price <= 1000) ||
   (band === "o1000" && price > 1000);
 
+const KIND_ORDER: ProductKind[] = ["fresh", "artificial", "other"];
+
 /**
- * Search, price filter and sort for the product grid, plus a "Popular" strip
- * (products the admin marked as featured). Everything runs in the browser on
- * the list the server already sent — no extra requests.
+ * Search, type (fresh / artificial / khata & flags), occasion, price filter and
+ * sort for the product grid, plus a "Popular" strip (products the admin marked
+ * as featured). Everything runs in the browser on the list the server already
+ * sent — no extra requests. Filter chips only appear when they would actually
+ * change what is shown.
  */
 export default function ProductBrowser({
   available,
   soldOut,
   allowPopular,
+  initialKind = "all",
+  initialOccasion = "all",
 }: {
   available: Bouquet[];
   soldOut: Bouquet[];
   allowPopular: boolean;
+  initialKind?: KindFilter;
+  initialOccasion?: OccasionFilter;
 }) {
   const { t } = useLang();
   const [query, setQuery] = useState("");
   const [band, setBand] = useState<PriceBand>("any");
   const [sort, setSort] = useState<SortKey>("default");
+  const [kind, setKind] = useState<KindFilter>(initialKind);
+  const [occasion, setOccasion] = useState<OccasionFilter>(initialOccasion);
 
-  const filtering = query.trim() !== "" || band !== "any" || sort !== "default";
+  const everything = useMemo(() => [...available, ...soldOut], [available, soldOut]);
+  const kindsPresent = KIND_ORDER.filter((k) => everything.some((b) => productKind(b) === k));
+  const occasionsPresent = OCCASIONS.filter((o) => everything.some((b) => b.tags?.includes(o)));
+
+  const filtering = query.trim() !== "" || band !== "any" || sort !== "default" || kind !== "all" || occasion !== "all";
 
   const apply = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -41,13 +57,15 @@ export default function ProductBrowser({
       const out = list.filter(
         (b) =>
           inBand(b.price, band) &&
+          (kind === "all" || productKind(b) === kind) &&
+          (occasion === "all" || (b.tags || []).includes(occasion)) &&
           (q === "" || b.name.toLowerCase().includes(q) || (b.description || "").toLowerCase().includes(q))
       );
       if (sort === "low") out.sort((a, b) => a.price - b.price);
       if (sort === "high") out.sort((a, b) => b.price - a.price);
       return out;
     };
-  }, [query, band, sort]);
+  }, [query, band, sort, kind, occasion]);
 
   const shownAvailable = apply(available);
   const shownSoldOut = apply(soldOut);
@@ -59,10 +77,45 @@ export default function ProductBrowser({
     : [];
 
   const control = "rounded-md border border-sand bg-white px-3 py-2 text-sm";
+  const chip = (active: boolean) =>
+    `rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
+      active ? "border-charcoal bg-charcoal text-ivory" : "border-sand bg-white text-charcoal hover:border-rose"
+    }`;
 
   return (
     <div>
-      <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+      {kindsPresent.length > 1 && (
+        <div className="mt-6 flex flex-wrap items-center gap-2" role="group" aria-label={t("kind.title")}>
+          <button type="button" onClick={() => setKind("all")} aria-pressed={kind === "all"} className={chip(kind === "all")}>
+            {t("kind.all")}
+          </button>
+          {kindsPresent.map((k) => (
+            <button key={k} type="button" onClick={() => setKind(k)} aria-pressed={kind === k} className={chip(kind === k)}>
+              {t(`kind.${k}`)}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {occasionsPresent.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label={t("occ.title")}>
+          <button
+            type="button"
+            onClick={() => setOccasion("all")}
+            aria-pressed={occasion === "all"}
+            className={chip(occasion === "all")}
+          >
+            {t("occ.all")}
+          </button>
+          {occasionsPresent.map((o) => (
+            <button key={o} type="button" onClick={() => setOccasion(o)} aria-pressed={occasion === o} className={chip(occasion === o)}>
+              {OCCASION_EMOJI[o]} {t(`occ.${o}`)}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <input
           type="search"
           value={query}
@@ -83,6 +136,13 @@ export default function ProductBrowser({
           <option value="high">{t("cat.sortHigh")}</option>
         </select>
       </div>
+
+      {kind === "artificial" && (
+        <p className="mt-4 rounded-card bg-amber-50 px-4 py-3 text-sm text-amber-900">{t("kind.artificialNote")}</p>
+      )}
+      {kind === "fresh" && (
+        <p className="mt-4 rounded-card bg-sage-light px-4 py-3 text-sm text-sage-dark">{t("kind.freshNote")}</p>
+      )}
 
       {popular.length > 0 && (
         <section className="mt-8">
